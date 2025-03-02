@@ -48,8 +48,6 @@ def analyze_trends(input_filename, output_filename):
 
     # Запись результата в JSON
     save_data(filtered_data, output_filename)
-    with open(output_filename, 'w', encoding='utf-8') as f:
-        json.dump(filtered_data, f, ensure_ascii=False, indent=4)
 
 # Вызов функции
 if __name__ == "__main__":
