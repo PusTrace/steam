@@ -17,7 +17,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 from datetime import datetime
-from utils.utils import save_data
 
 def generate_market_url(skin_name):
     """Генерирует URL для скина на маркете Steam."""

@@ -228,7 +228,10 @@ if __name__ == "__main__":
 
     for skin in skins:
             # Если для скина уже существует отметка о продаже или отмене ордера, пропускаем его
-        if skin in market_data and ("timestamp_when_canceled" in market_data[skin] or "timestamp_place_to_sell" in market_data[skin] or "not_found" in market_data[skin] or "timestamp_when_checked" in market_data[skin]):
+        if skin in market_data and ("timestamp_when_canceled" in market_data[skin]
+                                    or "timestamp_place_to_sell" in market_data[skin]
+                                    or "not_found" in market_data[skin]
+                                    ):
             print(f"Пропускаем {skin}: уже обработан.")
             continue
 

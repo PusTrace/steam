@@ -1,2 +1,4 @@
 database/price_history.json
 utils/__pycache__
+database/orders.json
+database/item_nameids.json
