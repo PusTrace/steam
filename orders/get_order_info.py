@@ -71,7 +71,6 @@ if __name__ == "__main__":
 
     for skin, data in skins.items():
         if skin in existing_data:
-            print(f"Данные для {skin} уже существуют.")
             continue
         # Извлекаем id для скина из второго JSON
         if skin in item_nameids:
