@@ -11,18 +11,6 @@ STEAM_API_URL = "https://steamcommunity.com/market/priceoverview/"
 
 MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
 
-def load_existing_database(filename):
-    """Загружает существующую базу данных, если файл существует"""
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
-    except FileNotFoundError:
-        return {}
-    except Exception as e:
-        print(f"Ошибка при загрузке базы данных из {filename}: {e}")
-        return {}
-
 def get_steam_market_info(market_hash_name):
     params = {
         "appid": "730",
@@ -63,7 +51,8 @@ def save_market_data(new_data, filename):
     """Сохраняет или обновляет данные в JSON файле"""
     try:
         # Пытаемся прочитать существующие данные
-        existing_data = load_existing_database(filename)
+        with open(filename, 'r', encoding='utf-8') as f:
+            existing_data = json.load(f)
         # Обновляем только новые данные
         existing_data.update(new_data)
         # Сохраняем обновленные данные
@@ -72,16 +61,6 @@ def save_market_data(new_data, filename):
         print(f"Данные успешно сохранены в {filename}")
     except Exception as e:
         print(f"Ошибка при сохранении данных: {e}")
-
-def load_skins_from_json(filename):
-    """Загружает список скинов из JSON файла"""
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            skins = json.load(f)
-        return skins
-    except Exception as e:
-        print(f"Ошибка при чтении файла {filename}: {e}")
-        return []
 
 def generate_market_hash_name(skin):
     """Генерирует полное название предмета для Steam Market"""
@@ -121,9 +100,10 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     # Загружаем список скинов и существующую базу данных
-    skins = load_skins_from_json("/home/pustrace/programming/trade/steam/database/skins.json")
-    market_data = load_existing_database("/home/pustrace/programming/trade/steam/database/database.json")  # глобальная база данных, в которую будем добавлять новые записи
-    
+    with open ("/home/pustrace/programming/trade/steam/database/skins.json", 'r', encoding='utf-8') as f:
+        skins = json.load(f)
+    with open ("/home/pustrace/programming/trade/steam/database/database.json", 'r', encoding='utf-8') as f:
+        market_data = json.load(f)
     consecutive_429_errors = 0  # Счётчик ошибок 429 подряд
 
     for skin in skins:

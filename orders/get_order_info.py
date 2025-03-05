@@ -76,9 +76,9 @@ if __name__ == "__main__":
         if skin in item_nameids:
             skin_id = item_nameids[skin]
         else:
-            print(f"ID для {skin} не найден в item_nameids.json.")
+            print(skin)
             continue
-        print(f"\nПолучение данных для {skin}...")
+        print(f"Запрашиваем данные для {skin}")
         item_data = get_steam_market_info(skin_id)
         
         if item_data:
@@ -92,5 +92,5 @@ if __name__ == "__main__":
                 time.sleep(1*60*60)
                 print("Превышено количество ошибок 429 подряд. Остановка на час.")
             time.sleep(40)
-
-        print("Парсинг завершён.")
+            
+    print("\nПарсинг завершён.")
