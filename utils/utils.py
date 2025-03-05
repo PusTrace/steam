@@ -10,14 +10,6 @@ def generate_market_url(skin_name):
     encoded_name = urllib.parse.quote(skin_name)
     url = f"https://steamcommunity.com/market/listings/730/{encoded_name}"
     return url
-    
-def check_skin_in_database(skin, skin_data):
-    """Проверяет, есть ли данные о скине в базе данных."""
-    if skin in skin_data:
-        return True
-    return False
-
-
 
 def save_data(new_data, filename):
     """Сохраняет или обновляет данные в JSON файле более эффективно."""

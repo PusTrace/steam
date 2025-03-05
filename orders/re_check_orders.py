@@ -1,96 +1,22 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import Select
 import time
 import json
 import re
-import subprocess
 import sys
 import signal
-import urllib.parse
-import base64
 import os
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 from datetime import datetime
 
-def generate_market_url(skin_name):
-    """Генерирует URL для скина на маркете Steam."""
-    encoded_name = urllib.parse.quote(skin_name)
-    url = f"https://steamcommunity.com/market/listings/730/{encoded_name}"
-    return url
-
-def load_existing_database(filename):
-    """Загружает (или создаёт) базу данных, в которую будем добавлять новые записи."""
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
-    except FileNotFoundError:
-        return {}
-    except Exception as e:
-        print(f"Ошибка при загрузке базы данных из {filename}: {e}")
-        return {}
-    
-def check_skin_in_database(skin, market_data):
-    """Проверяет, есть ли данные о скине в базе данных."""
-    if skin in market_data:
-        print(f"'{skin}' уже существует в базе")
-        return True
-    return False
-
-def save_data(new_data, filename):
-    """Сохраняет или обновляет данные в JSON файле."""
-    try:
-        existing_data = load_existing_database(filename)
-        for key, value in new_data.items():
-            if key in existing_data:
-                if isinstance(existing_data[key], list):
-                    existing_data[key].append(value)
-                elif isinstance(existing_data[key], dict):
-                    existing_data[key].update(value)
-                else:
-                    existing_data[key] = [existing_data[key], value]
-            else:
-                existing_data[key] = value
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(existing_data, f, ensure_ascii=False, indent=4)
-        print(f"Данные успешно сохранены в {filename}")
-    except Exception as e:
-        print(f"Ошибка при сохранении данных: {e}")
-
-def load_skins_from_json(filename):
-    """Загружает список скинов из JSON файла."""
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            skins = json.load(f)
-        return skins
-    except Exception as e:
-        print(f"Ошибка при чтении файла {filename}: {e}")
-        return []
-
-def signal_handler(signum, frame):
-    """Обработчик сигнала прерывания."""
-    global market_data
-    print("\nПолучен сигнал прерывания. Сохраняем данные перед выходом...")
-    if 'market_data' in globals() and market_data:
-        save_data(market_data, "/home/pustrace/programming/trade/steam/database/timer.json")
-    print("Данные сохранены. Завершение работы.")
-    sys.exit(0)
-
-def run_router_script():
-    """Запускает router.py."""
-    try:
-        subprocess.run(["python", "/home/pustrace/programming/trade/utils/router.py"], check=True)
-        print("router.py успешно запущен.")
-        print("Ожидаем 5 минут...")
-        time.sleep(300)
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при запуске router.py: {e}")
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+from utils.utils import save_data, signal_handler, generate_market_url
 
 def get_orders_data(url, keep_browser_open=False):
     """
@@ -203,7 +129,7 @@ def analyze_for_cancel_v1(orders, my_price, current_sells):
     """
     Анализирует список ордеров и определяет, нужно ли убирать ордер.
     """
-    return sum(order["quantity"] for order in orders if order["price"] < my_price) > (current_sells * 2)
+    return sum(order["quantity"] for order in orders if order["price"] < my_price) > (current_sells * 1.7)
 
 
 if __name__ == "__main__":
@@ -218,9 +144,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     steam_login(driver)
 
-    
-    skins = load_skins_from_json("/home/pustrace/programming/trade/steam/database/timer.json")
-    market_data = load_existing_database("/home/pustrace/programming/trade/steam/database/timer.json")
+    with open("/home/pustrace/programming/trade/steam/database/timer.json", "r") as file:
+        skins = json.load(file)
     
     consecutive_errors = 0
     max_attempts = 6
@@ -228,9 +153,9 @@ if __name__ == "__main__":
 
     for skin in skins:
             # Если для скина уже существует отметка о продаже или отмене ордера, пропускаем его
-        if skin in market_data and ("timestamp_when_canceled" in market_data[skin]
-                                    or "timestamp_place_to_sell" in market_data[skin]
-                                    or "not_found" in market_data[skin]
+        if skin in skins and ("timestamp_when_canceled" in skins[skin]
+                                    or "timestamp_place_to_sell" in skins[skin]
+                                    or "not_found" in skins[skin]
                                     ):
             print(f"Пропускаем {skin}: уже обработан.")
             continue
@@ -241,20 +166,19 @@ if __name__ == "__main__":
         orders, my_order_price, sells_now = get_orders_data(url, keep_browser_open=True)
         
         if my_order_price is None:
-            market_data[skin] = {"not_found": datetime.now().isoformat()}
-            save_data(market_data, "/home/pustrace/programming/trade/steam/database/timer.json")
+            skins[skin] = {"not_found": datetime.now().isoformat()}
+            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
             continue
         
-        # анализ информации покупать или нет и за сколько
         decision = analyze_for_cancel_v1(orders, my_order_price, sells_now)
         if decision:
             cancel_order()
-            market_data[skin] = {"canceled_order_price": my_order_price, "timestamp_when_canceled": datetime.now().isoformat()}
-            save_data(market_data, "/home/pustrace/programming/trade/steam/database/timer.json")
+            skins[skin] = {"canceled_order_price": my_order_price, "timestamp_when_canceled": datetime.now().isoformat()}
+            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
             
         else:
-            market_data[skin] = {"timestamp_when_checked": datetime.now().isoformat()}
-            save_data(market_data, "/home/pustrace/programming/trade/steam/database/timer.json")
+            skins[skin] = {"timestamp_when_checked": datetime.now().isoformat()}
+            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
         
         
     print("Парсинг завершён.")
