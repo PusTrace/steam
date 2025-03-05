@@ -30,9 +30,9 @@ if response.status_code == 200:
 
         # Проверка на наличие cache_expiration
         cache_expiration = item.get('cache_expiration', None)
-        skins_data[market_hash_name] = {cache_expiration: item.get('cache_expiration', None)}
+        skins_data[market_hash_name] = {'cache_expiration': cache_expiration}
 
-        save_data(skins_data, 'steam/database/timer.json')
+        save_data(skins_data, '/home/pustrace/programming/trade/steam/database/timer.json')
 
 else:
     print(f"Ошибка {response.status_code}")

@@ -1,78 +1,20 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.support.ui import Select
 import time
 import json
-import re
-import subprocess
 import sys
 import signal
-import urllib.parse
-import base64
 import os
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
 from datetime import datetime
 
-def generate_market_url(skin_name):
-    """Генерирует URL для скина на маркете Steam."""
-    encoded_name = urllib.parse.quote(skin_name)
-    url = f"https://steamcommunity.com/market/listings/730/{encoded_name}"
-    return url
-
-def load_existing_database(filename):
-    """Загружает (или создаёт) базу данных, в которую будем добавлять новые записи."""
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
-    except FileNotFoundError:
-        return {}
-    except Exception as e:
-        print(f"Ошибка при загрузке базы данных из {filename}: {e}")
-        return {}
-    
-def check_skin_in_database(skin, market_data):
-    """Проверяет, есть ли данные о скине в базе данных."""
-    if skin in market_data:
-        print(f"'{skin}' уже существует в базе")
-        return True
-    return False
-
-
-
-def load_skins_from_json(filename):
-    """Загружает список скинов из JSON файла."""
-    try:
-        with open(filename, 'r', encoding='utf-8') as f:
-            skins = json.load(f)
-        return skins
-    except Exception as e:
-        print(f"Ошибка при чтении файла {filename}: {e}")
-        return []
-
-def signal_handler(signum, frame):
-    """Обработчик сигнала прерывания."""
-    global market_data
-    print("\nПолучен сигнал прерывания. Сохраняем данные перед выходом...")
-    if 'market_data' in globals() and market_data:
-        save_data(market_data, "steam/database/timer.json")
-    print("Данные сохранены. Завершение работы.")
-    sys.exit(0)
-
-def run_router_script():
-    """Запускает router.py."""
-    try:
-        subprocess.run(["python", "/home/pustrace/programming/steam_parser/utils/router.py"], check=True)
-        print("router.py успешно запущен.")
-        print("Ожидаем 5 минут...")
-        time.sleep(300)
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при запуске router.py: {e}")
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+from utils.utils import save_data, signal_handler, generate_market_url
 
 def get_orders_data(url, keep_browser_open=False):
     """
@@ -141,15 +83,14 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     steam_login(driver)
 
-    
-    skins = load_skins_from_json("/home/pustrace/programming/trade/steam/database/timer.json")
-    market_data = load_existing_database("/home/pustrace/programming/steam_parser/main/database/timer.json")
+    with open("/home/pustrace/programming/trade/steam/database/timer.json", "r", encoding="utf-8") as f:
+        skins = json.load(f)
     
     consecutive_errors = 0
     max_attempts = 6
         
 for skin_name, skin_data in skins.items():
-    if skin_name in market_data and "sell_price" in market_data[skin_name] and "timestamp_place_to_sell" in market_data[skin_name] and "This_item_is_missing" in market_data[skin_name]:
+    if skin_name in skins and "sell_price" in skins[skin_name] and "timestamp_place_to_sell" in skins[skin_name] and "This_item_is_missing" in skins[skin_name]:
         print(f"'{skin_data}' уже обработан")
         continue
     if "cache_expiration" not in skin_data:
@@ -158,8 +99,8 @@ for skin_name, skin_data in skins.items():
         url = generate_market_url(skin_name)
         current_price = get_orders_data(url, keep_browser_open=True)
         if current_price is None:
-            market_data[skin_name] = {"This_item_is_missing": datetime.now().isoformat()}
-            save_data(market_data, "steam/database/timer.json")
+            skins[skin_name] = {"This_item_is_missing": datetime.now().isoformat()}
+            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
             continue
         order_price = skin_data.get("order_price")
         decision, sell_price = analyze_to_sell_v1(current_price, order_price)
@@ -167,12 +108,10 @@ for skin_name, skin_data in skins.items():
             print(f"Продать '{skin_name}' на {sell_price}")
             # автопродажа не реализовано
             # sell_skin(sell_price)
-            market_data[skin_name] = {"sell_price": sell_price, "timestamp_place_to_sell": datetime.now().isoformat()}
-            save_data(market_data, "steam/database/timer.json")
+            skins[skin_name] = {"sell_price": sell_price, "timestamp_place_to_sell": datetime.now().isoformat()}
+            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
     else:
         continue
-        
-        # # анализ информации покупать или нет и за сколько
 
         
         

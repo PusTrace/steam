@@ -23,13 +23,13 @@
     "USP-S | Check Engine (Minimal Wear)": {
         "order_price": 391.14,
         "timestamp": "2025-02-15T00:18:19.890444",
-        "timestamp_when_checked": "2025-03-05T17:44:54.003654",
+        "timestamp_when_checked": "2025-03-05T18:25:18.273816",
         "timestamp_when_smaller_checked": "2025-03-01T16:44:47.069291"
     },
     "USP-S | Check Engine (Field-Tested)": {
         "order_price": 259.7229,
         "timestamp": "2025-02-15T00:18:28.423000",
-        "timestamp_when_checked": "2025-03-05T17:45:00.726891",
+        "timestamp_when_checked": "2025-03-05T18:25:24.964278",
         "timestamp_when_smaller_checked": "2025-03-01T16:44:50.602098"
     },
     "USP-S | Check Engine (Well-Worn)": {
@@ -65,7 +65,7 @@
     "Glock-18 | Moonrise (Well-Worn)": {
         "order_price": 423.18389999999994,
         "timestamp": "2025-02-15T00:19:51.545850",
-        "timestamp_when_checked": "2025-03-05T17:45:07.433725",
+        "timestamp_when_checked": "2025-03-05T18:25:31.503868",
         "timestamp_when_smaller_checked": "2025-03-01T16:44:54.100431"
     },
     "Glock-18 | Moonrise (Battle-Scarred)": {
@@ -93,13 +93,13 @@
     "Glock-18 | Bunsen Burner (Battle-Scarred)": {
         "order_price": 227.03,
         "timestamp": "2025-02-15T00:20:41.422840",
-        "timestamp_when_checked": "2025-03-05T17:45:14.306378",
+        "timestamp_when_checked": "2025-03-05T18:25:38.186982",
         "timestamp_when_smaller_checked": "2025-03-01T16:44:57.933599"
     },
     "Glock-18 | Wraiths (Minimal Wear)": {
         "order_price": 264.59,
         "timestamp": "2025-02-15T00:20:50.269975",
-        "timestamp_when_checked": "2025-03-05T17:45:20.988310",
+        "timestamp_when_checked": "2025-03-05T18:25:50.066510",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:09.347822"
     },
     "Glock-18 | Wraiths (Field-Tested)": {
@@ -148,12 +148,14 @@
         "order_price": 382.68,
         "timestamp": "2025-02-15T00:22:40.324300",
         "timestamp_when_checked": "2025-03-05T17:45:37.139757",
-        "timestamp_when_smaller_checked": "2025-03-01T16:45:17.503828"
+        "timestamp_when_smaller_checked": "2025-03-01T16:45:17.503828",
+        "canceled_order_price": 382.68,
+        "timestamp_when_canceled": "2025-03-05T18:25:59.231604"
     },
     "Glock-18 | Catacombs (Field-Tested)": {
         "order_price": 201.9768,
         "timestamp": "2025-02-15T00:22:56.480297",
-        "timestamp_when_checked": "2025-03-05T17:45:44.133792",
+        "timestamp_when_checked": "2025-03-05T18:26:07.729003",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:21.813039"
     },
     "USP-S | Ticket to Hell (Field-Tested)": {
@@ -194,7 +196,9 @@
         "order_price": 339.38,
         "timestamp": "2025-02-15T00:24:41.889943",
         "timestamp_when_checked": "2025-03-05T17:45:50.775961",
-        "timestamp_when_smaller_checked": "2025-03-01T16:45:34.690530"
+        "timestamp_when_smaller_checked": "2025-03-01T16:45:34.690530",
+        "canceled_order_price": 339.38,
+        "timestamp_when_canceled": "2025-03-05T18:26:16.491932"
     },
     "Desert Eagle | Light Rail (Well-Worn)": {
         "order_price": 408.4,
@@ -237,13 +241,13 @@
     "Desert Eagle | Oxide Blaze (Field-Tested)": {
         "order_price": 138.9108,
         "timestamp": "2025-02-15T00:26:45.313724",
-        "timestamp_when_checked": "2025-03-05T17:46:06.386524",
+        "timestamp_when_checked": "2025-03-05T18:26:24.702366",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:44.078726"
     },
     "P250 | Iron Clad (Field-Tested)": {
         "order_price": 80.53,
         "timestamp": "2025-02-15T00:27:34.962483",
-        "timestamp_when_checked": "2025-03-05T17:46:13.096999",
+        "timestamp_when_checked": "2025-03-05T18:26:31.523477",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:47.661050"
     },
     "P250 | X-Ray (Factory New)": {
@@ -261,7 +265,7 @@
     "P250 | Verdigris (Field-Tested)": {
         "order_price": 74.2026,
         "timestamp": "2025-02-15T00:28:27.218995",
-        "timestamp_when_checked": "2025-03-05T17:46:19.539758",
+        "timestamp_when_checked": "2025-03-05T18:26:41.617700",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:51.110110"
     },
     "P250 | Verdigris (Battle-Scarred)": {
@@ -285,13 +289,13 @@
     "Five-SeveN | Silver Quartz (Minimal Wear)": {
         "order_price": 258.84,
         "timestamp": "2025-02-15T00:29:16.272436",
-        "timestamp_when_checked": "2025-03-05T17:46:26.657485",
+        "timestamp_when_checked": "2025-03-05T18:26:50.592865",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:54.856167"
     },
     "Five-SeveN | Violent Daimyo (Minimal Wear)": {
         "order_price": 238.95389999999998,
         "timestamp": "2025-02-15T00:29:32.491394",
-        "timestamp_when_checked": "2025-03-05T17:46:33.401596",
+        "timestamp_when_checked": "2025-03-05T18:26:57.574462",
         "timestamp_when_smaller_checked": "2025-03-01T16:45:58.720285"
     },
     "Five-SeveN | Violent Daimyo (Field-Tested)": {
@@ -331,7 +335,7 @@
     "P250 | Valence (Minimal Wear)": {
         "order_price": 155.96759999999998,
         "timestamp": "2025-02-15T00:31:01.042177",
-        "cache_expiration": "2025-03-04T08:00:00Z",
+        "cache_expiration": "2025-03-07T08:00:00Z",
         "not_found": "2025-03-01T15:24:47.138321"
     },
     "CZ75-Auto | Circaetus (Field-Tested)": {
@@ -437,13 +441,15 @@
     "P2000 | Acid Etched (Battle-Scarred)": {
         "order_price": 269.8866,
         "timestamp": "2025-02-15T00:36:22.142485",
-        "cache_expiration": "2025-03-03T08:00:00Z",
-        "not_found": "2025-03-04T12:57:24.991911"
+        "cache_expiration": null,
+        "not_found": "2025-03-04T12:57:24.991911",
+        "sell_price": 310.36958999999996,
+        "timestamp_place_to_sell": "2025-03-05T18:12:37.079638"
     },
     "R8 Revolver | Amber Fade (Field-Tested)": {
         "order_price": 293.34999999999997,
         "timestamp": "2025-02-15T00:36:44.847112",
-        "timestamp_when_checked": "2025-03-05T17:46:40.269746",
+        "timestamp_when_checked": "2025-03-05T18:27:04.711562",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:02.358526"
     },
     "Dual Berettas | Dualing Dragons (Field-Tested)": {
@@ -549,7 +555,7 @@
     "MP7 | Cirrus (Minimal Wear)": {
         "order_price": 122.86,
         "timestamp": "2025-02-15T00:44:43.176995",
-        "timestamp_when_checked": "2025-03-05T17:46:47.109284",
+        "timestamp_when_checked": "2025-03-05T18:27:11.670562",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:05.962596"
     },
     "MP7 | Mischief (Field-Tested)": {
@@ -561,7 +567,7 @@
     "MP7 | Sunbaked (Factory New)": {
         "order_price": 96.2895,
         "timestamp": "2025-02-15T00:45:07.239658",
-        "cache_expiration": "2025-03-03T08:00:00Z",
+        "cache_expiration": "2025-03-06T08:00:00Z",
         "not_found": "2025-03-01T15:29:53.266389"
     },
     "MAC-10 | Rangeen (Minimal Wear)": {
@@ -589,7 +595,7 @@
     "MP9 | Goo (Field-Tested)": {
         "order_price": 408.4,
         "timestamp": "2025-02-15T00:45:58.711784",
-        "timestamp_when_checked": "2025-03-05T17:46:53.804399",
+        "timestamp_when_checked": "2025-03-05T18:27:18.931306",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:10.644315"
     },
     "MP9 | Capillary (Field-Tested)": {
@@ -603,7 +609,8 @@
         "timestamp": "2025-02-15T00:46:16.387218",
         "timestamp_when_checked": "2025-03-01T15:57:28.722767",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:14.468210",
-        "not_found": "2025-03-04T12:57:47.940019"
+        "not_found": "2025-03-04T12:57:47.940019",
+        "cache_expiration": "2025-03-10T07:00:00Z"
     },
     "MP9 | Modest Threat (Factory New)": {
         "order_price": 166.81,
@@ -637,7 +644,9 @@
         "order_price": 316.37,
         "timestamp": "2025-02-15T00:48:42.868535",
         "timestamp_when_checked": "2025-03-05T17:47:00.500808",
-        "timestamp_when_smaller_checked": "2025-03-01T16:46:17.971856"
+        "timestamp_when_smaller_checked": "2025-03-01T16:46:17.971856",
+        "canceled_order_price": 316.37,
+        "timestamp_when_canceled": "2025-03-05T18:27:27.913435"
     },
     "PP-Bizon | Runic (Factory New)": {
         "order_price": 143.79999999999998,
@@ -648,19 +657,19 @@
     "AK-47 | Uncharted (Field-Tested)": {
         "order_price": 224.32999999999998,
         "timestamp": "2025-02-15T00:49:13.829749",
-        "timestamp_when_checked": "2025-03-05T17:47:08.216421",
+        "timestamp_when_checked": "2025-03-05T18:27:37.369247",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:22.910794"
     },
     "AK-47 | Uncharted (Battle-Scarred)": {
         "order_price": 224.32999999999998,
         "timestamp": "2025-02-15T00:49:22.512548",
-        "timestamp_when_checked": "2025-03-05T17:47:14.874179",
+        "timestamp_when_checked": "2025-03-05T18:27:43.940770",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:26.404113"
     },
     "AWP | Capillary (Minimal Wear)": {
         "order_price": 339.38,
         "timestamp": "2025-02-15T00:49:31.095525",
-        "timestamp_when_checked": "2025-03-05T17:47:21.348907",
+        "timestamp_when_checked": "2025-03-05T18:27:50.696154",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:30.058286"
     },
     "AWP | Capillary (Field-Tested)": {
@@ -673,19 +682,19 @@
     "AWP | Acheron (Field-Tested)": {
         "order_price": 226.734,
         "timestamp": "2025-02-15T00:50:01.292352",
-        "timestamp_when_checked": "2025-03-05T17:47:28.065420",
+        "timestamp_when_checked": "2025-03-05T18:27:57.427356",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:39.595904"
     },
     "AWP | Pit Viper (Minimal Wear)": {
         "order_price": 330.01,
         "timestamp": "2025-02-15T00:50:17.164275",
-        "timestamp_when_checked": "2025-03-05T17:47:35.268656",
+        "timestamp_when_checked": "2025-03-05T18:28:04.395506",
         "timestamp_when_smaller_checked": "2025-03-01T16:46:44.074790"
     },
     "AWP | Pit Viper (Field-Tested)": {
         "order_price": 157.01,
         "timestamp": "2025-02-15T00:50:26.240826",
-        "timestamp_when_checked": "2025-03-05T17:47:42.215530",
+        "timestamp_when_checked": "2025-03-05T18:28:11.341135",
         "timestamp_when_smaller_checked": "2025-03-01T16:47:45.445135"
     },
     "AWP | Pit Viper (Well-Worn)": {
@@ -703,19 +712,19 @@
     "M4A4 | Magnesium (Field-Tested)": {
         "order_price": 177.2748,
         "timestamp": "2025-02-15T00:50:52.586053",
-        "timestamp_when_checked": "2025-03-05T17:47:48.837964",
+        "timestamp_when_checked": "2025-03-05T18:28:17.926909",
         "timestamp_when_smaller_checked": "2025-03-01T16:49:46.788960"
     },
     "M4A4 | Magnesium (Battle-Scarred)": {
         "order_price": 84.6492,
         "timestamp": "2025-02-15T00:51:01.360720",
-        "timestamp_when_checked": "2025-03-05T17:47:55.313674",
+        "timestamp_when_checked": "2025-03-05T18:28:24.528468",
         "timestamp_when_smaller_checked": "2025-03-01T16:49:50.567836"
     },
     "M4A4 | Converter (Minimal Wear)": {
         "order_price": 329.8062,
         "timestamp": "2025-02-15T00:51:09.943888",
-        "timestamp_when_checked": "2025-03-05T17:48:02.066884",
+        "timestamp_when_checked": "2025-03-05T18:28:35.991361",
         "timestamp_when_smaller_checked": "2025-03-01T16:49:53.999605"
     },
     "M4A4 | Converter (Field-Tested)": {
@@ -727,25 +736,25 @@
     "AK-47 | Uncharted (Minimal Wear)": {
         "order_price": 349.3401,
         "timestamp": "2025-02-15T00:51:33.952455",
-        "timestamp_when_checked": "2025-03-05T17:48:12.012285",
+        "timestamp_when_checked": "2025-03-05T18:29:36.868964",
         "timestamp_when_smaller_checked": "2025-03-01T16:49:58.396793"
     },
     "M4A4 | Urban DDPAT (Minimal Wear)": {
         "order_price": 166.81,
         "timestamp": "2025-02-15T00:51:42.907685",
-        "timestamp_when_checked": "2025-03-05T17:48:19.773318",
+        "timestamp_when_checked": "2025-03-05T18:29:47.471758",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:13.188144"
     },
     "M4A4 | Magnesium (Minimal Wear)": {
         "order_price": 348.01,
         "timestamp": "2025-02-15T00:51:51.561605",
-        "timestamp_when_checked": "2025-03-05T17:48:26.925651",
+        "timestamp_when_checked": "2025-03-05T18:29:55.007969",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:17.065817"
     },
     "M4A1-S | Flashback (Field-Tested)": {
         "order_price": 269.7969,
         "timestamp": "2025-02-15T00:52:20.244471",
-        "timestamp_when_checked": "2025-03-05T17:48:33.691175",
+        "timestamp_when_checked": "2025-03-05T18:30:02.199024",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:21.498357"
     },
     "M4A1-S | Flashback (Well-Worn)": {
@@ -763,19 +772,19 @@
     "M4A1-S | Night Terror (Field-Tested)": {
         "order_price": 251.82999999999998,
         "timestamp": "2025-02-15T00:52:46.356470",
-        "timestamp_when_checked": "2025-03-05T17:48:40.301765",
+        "timestamp_when_checked": "2025-03-05T18:30:14.279318",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:27.363155"
     },
     "M4A1-S | Mud-Spec (Minimal Wear)": {
         "order_price": 184.07,
         "timestamp": "2025-02-15T00:53:09.196273",
-        "timestamp_when_checked": "2025-03-05T17:48:46.714212",
+        "timestamp_when_checked": "2025-03-05T18:30:20.593572",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:30.553763"
     },
     "M4A1-S | Mud-Spec (Field-Tested)": {
         "order_price": 95.6409,
         "timestamp": "2025-02-15T00:53:17.505130",
-        "timestamp_when_checked": "2025-03-05T17:48:53.183450",
+        "timestamp_when_checked": "2025-03-05T18:30:27.021802",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:34.191846"
     },
     "M4A1-S | Mud-Spec (Well-Worn)": {
@@ -1023,8 +1032,10 @@
     "FAMAS | Decommissioned (Battle-Scarred)": {
         "order_price": 82.95,
         "timestamp": "2025-02-15T01:51:25.741502",
-        "cache_expiration": "2025-03-05T08:00:00Z",
-        "not_found": "2025-03-04T12:59:51.783960"
+        "cache_expiration": null,
+        "not_found": "2025-03-04T12:59:51.783960",
+        "sell_price": 95.3925,
+        "timestamp_place_to_sell": "2025-03-05T18:12:42.383623"
     },
     "FAMAS | Meow 36 (Factory New)": {
         "order_price": 186.04,
@@ -1047,8 +1058,10 @@
     "SSG 08 | Ghost Crusader (Battle-Scarred)": {
         "order_price": 249.5,
         "timestamp": "2025-02-15T01:52:07.959754",
-        "cache_expiration": "2025-03-04T08:00:00Z",
-        "not_found": "2025-03-04T12:59:54.598207"
+        "cache_expiration": null,
+        "not_found": "2025-03-04T12:59:54.598207",
+        "sell_price": 286.92499999999995,
+        "timestamp_place_to_sell": "2025-03-05T18:12:47.966551"
     },
     "SSG 08 | Fever Dream (Battle-Scarred)": {
         "order_price": 326.84,
@@ -1132,7 +1145,7 @@
     "SSG 08 | Abyss (Well-Worn)": {
         "order_price": 97.01,
         "timestamp": "2025-02-15T01:58:31.358514",
-        "timestamp_when_checked": "2025-03-05T17:49:09.029087",
+        "timestamp_when_checked": "2025-03-05T18:30:33.875097",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:45.063057"
     },
     "SSG 08 | Abyss (Battle-Scarred)": {
@@ -1164,7 +1177,7 @@
     "SSG 08 | Abyss (Field-Tested)": {
         "order_price": 137.60999999999999,
         "timestamp": "2025-02-15T02:00:03.913906",
-        "timestamp_when_checked": "2025-03-05T17:49:15.999121",
+        "timestamp_when_checked": "2025-03-05T18:30:48.619427",
         "timestamp_when_smaller_checked": "2025-03-01T16:52:56.042650"
     },
     "P250 | Verdigris (Minimal Wear)": {
@@ -1182,41 +1195,41 @@
     "Premier Season One Medal": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:08.384790"
+        "This_item_is_missing": "2025-03-05T18:12:48.648982"
     },
     "5 Year Veteran Coin": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:09.048289"
+        "This_item_is_missing": "2025-03-05T18:12:49.292590"
     },
     "Music Kit | Valve, CS:GO": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:09.723044"
+        "This_item_is_missing": "2025-03-05T18:12:50.094879"
     },
     "Global Offensive Badge": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:10.430183"
+        "This_item_is_missing": "2025-03-05T18:12:50.783480"
     },
     "Graffiti | Tombstone (Princess Pink)": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:11.067526"
+        "This_item_is_missing": "2025-03-05T18:12:51.535398"
     },
     "Graffiti | QQ (Tiger Orange)": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:11.773948"
+        "This_item_is_missing": "2025-03-05T18:12:52.201266"
     },
     "Graffiti | GLHF (War Pig Pink)": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:12.462739"
+        "This_item_is_missing": "2025-03-05T18:12:52.926241"
     },
     "Graffiti | Rage Mode (Monarch Blue)": {
         "not_found": null,
         "cache_expiration": null,
-        "This_item_is_missing": "2025-03-02T14:35:13.098126"
+        "This_item_is_missing": "2025-03-05T18:12:53.580328"
     }
 }

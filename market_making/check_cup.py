@@ -129,7 +129,7 @@ def analyze_for_cancel_v1(orders, my_price, current_sells):
     """
     Анализирует список ордеров и определяет, нужно ли убирать ордер.
     """
-    return sum(order["quantity"] for order in orders if order["price"] < my_price) > (current_sells * 1.7)
+    return sum(order["quantity"] for order in orders if order["price"] < my_price) > (current_sells * 1.5)
 
 
 if __name__ == "__main__":
