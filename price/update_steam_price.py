@@ -1,0 +1,93 @@
+import requests
+import json
+from datetime import datetime
+import time
+import signal
+import sys
+import subprocess  # Для вызова программы router.py
+import sys
+import os
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+from utils.utils import save_data, run_router_script
+
+# Константы для Steam API
+STEAM_API_URL = "https://steamcommunity.com/market/priceoverview/"
+
+MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
+
+def get_steam_market_info(skin):
+    params = {
+        "appid": "730",
+        "currency": 37,
+        "skin": skin
+    }
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "STEAM_LOGIN_SECURE": os.getenv("STEAM_LOGIN_SECURE")
+    }
+    
+    try:
+        response = requests.get(STEAM_API_URL, params=params, headers=headers)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if data.get("success"):
+            return {
+                "lowest_price": data.get("lowest_price"),
+                "median_price": data.get("median_price"),
+                "volume": data.get("volume"),
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            print(f"Не удалось получить данные для {skin}")
+            return None
+            
+    except requests.RequestException as e:
+        print(f"Ошибка при запросе к Steam API для {skin}: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        print(f"Ошибка при разборе JSON для {skin}: {e}")
+        return None
+
+
+def signal_handler(signum, frame):
+    """Обработчик сигнала прерывания"""
+    global data
+    print("\nПолучен сигнал прерывания. Сохраняем данные перед выходом...")
+    if 'data' in globals() and data:
+        save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/database.json")
+    print("Данные сохранены. Завершение работы.")
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+    # Регистрируем обработчик сигнала
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # Загружаем список скинов и существующую базу данных
+    with open ("/home/pustrace/programming/trade/steam/database/perfect.json", 'r', encoding='utf-8') as f:
+        skins = json.load(f)
+    consecutive_429_errors = 0  # Счётчик ошибок 429 подряд
+    for skin, data in skins.items():
+        print(f"\nПолучение данных для {skin}...")
+        item_data = get_steam_market_info(skin)
+        
+        if item_data:
+            data[skin] = item_data
+            save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/database.json")
+            consecutive_429_errors = 0
+            time.sleep(3.5)
+        else:
+            consecutive_429_errors += 1
+            if consecutive_429_errors >= MAX_RETRIES:
+                print("Достигнут лимит ошибок 429 подряд. Запускаем router.py.")
+                time.sleep(5*60)
+                consecutive_429_errors = 0
+            time.sleep(40)
+
+    print("Парсинг завершён.")
