@@ -15,19 +15,18 @@ from utils.utils import save_data, run_router_script
 # Константы для Steam API
 STEAM_API_URL = "https://steamcommunity.com/market/priceoverview/"
 
-MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
+MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 
 
 def get_steam_market_info(skin):
     params = {
         "appid": "730",
         "currency": 37,
-        "skin": skin
+        "market_hash_name": skin
     }
     
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json",
-        "STEAM_LOGIN_SECURE": os.getenv("STEAM_LOGIN_SECURE")
+        "Accept": "application/json"
     }
     
     try:
@@ -60,7 +59,7 @@ def signal_handler(signum, frame):
     global data
     print("\nПолучен сигнал прерывания. Сохраняем данные перед выходом...")
     if 'data' in globals() and data:
-        save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/database.json")
+        save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/perfect.json")
     print("Данные сохранены. Завершение работы.")
     sys.exit(0)
 
@@ -72,22 +71,22 @@ if __name__ == "__main__":
     # Загружаем список скинов и существующую базу данных
     with open ("/home/pustrace/programming/trade/steam/database/perfect.json", 'r', encoding='utf-8') as f:
         skins = json.load(f)
-    consecutive_429_errors = 0  # Счётчик ошибок 429 подряд
+    errors = 0  # Счётчик ошибок подряд
     for skin, data in skins.items():
         print(f"\nПолучение данных для {skin}...")
         item_data = get_steam_market_info(skin)
         
         if item_data:
             data[skin] = item_data
-            save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/database.json")
-            consecutive_429_errors = 0
+            save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/perfect.json")
+            errors = 0
             time.sleep(3.5)
         else:
-            consecutive_429_errors += 1
-            if consecutive_429_errors >= MAX_RETRIES:
-                print("Достигнут лимит ошибок 429 подряд. Запускаем router.py.")
-                time.sleep(5*60)
-                consecutive_429_errors = 0
-            time.sleep(40)
+            errors += 1
+            if errors >= MAX_RETRIES:
+                print("Достигнут лимит ошибок подряд. Запускаем router.py.")
+                time.sleep(6*60)
+                errors = 0
+            time.sleep(2*60)
 
     print("Парсинг завершён.")
