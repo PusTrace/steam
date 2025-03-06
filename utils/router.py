@@ -4,7 +4,7 @@ import os
 # Параметры
 ROUTER_IP = "192.168.0.1"
 USERNAME = "PusTrace"
-PASSWORD = os.getenv("YOUR_PASSWORD")
+PASSWORD = os.getenv("YOUR_ROUTER_PSWD")
 
 # Создаем сессию
 session = requests.Session()
@@ -29,7 +29,7 @@ response = session.post(f'http://{ROUTER_IP}/cgi?7', data=data, verify=False)
 
 # Проверка ответа
 if response.status_code == 200:
-    print("Роутер успешно перезагружен! (проверь вручную)")
+    print("Роутер успешно перезагружен!")
 else:
     print(f"Ошибка! Код ответа: {response.status_code}")
     print(response.text)

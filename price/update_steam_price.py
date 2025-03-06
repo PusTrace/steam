@@ -1,12 +1,11 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, date
 import time
 import signal
 import sys
-import subprocess  # Для вызова программы router.py
-import sys
 import os
+
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
@@ -14,7 +13,6 @@ from utils.utils import save_data, run_router_script
 
 # Константы для Steam API
 STEAM_API_URL = "https://steamcommunity.com/market/priceoverview/"
-
 MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 
 
 def get_steam_market_info(skin):
@@ -56,10 +54,10 @@ def get_steam_market_info(skin):
 
 def signal_handler(signum, frame):
     """Обработчик сигнала прерывания"""
-    global data
+    global skins
     print("\nПолучен сигнал прерывания. Сохраняем данные перед выходом...")
-    if 'data' in globals() and data:
-        save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/perfect.json")
+    if 'skins' in globals() and skins:
+        save_data(skins, "/home/pustrace/programming/trade/steam/database/perfect.json")
     print("Данные сохранены. Завершение работы.")
     sys.exit(0)
 
@@ -69,24 +67,37 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     # Загружаем список скинов и существующую базу данных
-    with open ("/home/pustrace/programming/trade/steam/database/perfect.json", 'r', encoding='utf-8') as f:
+    with open("/home/pustrace/programming/trade/steam/database/perfect.json", 'r', encoding='utf-8') as f:
         skins = json.load(f)
+
     errors = 0  # Счётчик ошибок подряд
+    today = date.today()  # Текущая дата
+
     for skin, data in skins.items():
+        # Проверка, если у скина уже есть сегодняшний timestamp
+        last_timestamp = data.get("timestamp")
+        if last_timestamp:
+            last_date = datetime.fromisoformat(last_timestamp).date()
+            if last_date == today:
+                print(f"Пропускаем {skin}, данные уже обновлены сегодня.")
+                continue
+
         print(f"\nПолучение данных для {skin}...")
         item_data = get_steam_market_info(skin)
         
         if item_data:
-            data[skin] = item_data
-            save_data({skin: item_data}, "/home/pustrace/programming/trade/steam/database/perfect.json")
+            skins[skin] = item_data
+            save_data(skins, "/home/pustrace/programming/trade/steam/database/perfect.json")
             errors = 0
             time.sleep(3.5)
         else:
             errors += 1
             if errors >= MAX_RETRIES:
                 print("Достигнут лимит ошибок подряд. Запускаем router.py.")
+                # run_router_script()
                 time.sleep(6*60)
                 errors = 0
-            time.sleep(2*60)
+            time.sleep(30)
 
     print("Парсинг завершён.")
+

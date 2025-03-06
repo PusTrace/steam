@@ -60,9 +60,6 @@ def signal_handler(signum, frame):
 def run_router_script():
     """Запускает router.py."""
     try:
-        subprocess.run(["python", "/home/pustrace/programming/steam_parser/utils/router.py"], check=True)
-        print("router.py успешно запущен.")
-        print("Ожидаем 5 минут...")
-        time.sleep(300)
+        subprocess.run(["python", "/home/pustrace/programming/trade/steam/utils/router.py"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Ошибка при запуске router.py: {e}")
