@@ -29,14 +29,13 @@ for skin, skin_info in perfect_data.items():
     for i in range(len(buy_order_graph) - 1):
         price_high = buy_order_graph[i][0]
         price_low = buy_order_graph[i+1][0]
-        if price_high > target_price_87 > price_low:
-            skin_info["order_info_87"] = buy_order_graph[i+1][1]
         if price_high > target_price > price_low:
             skin_info["order_info"] = buy_order_graph[i+1][1]
 
-    # Если массив не пустой, сохраняем последний элемент массива
+    
     if buy_order_graph:
         skin_info["order_info_last"] = buy_order_graph[-1][1]
+        skin_info["order_info_first"] = buy_order_graph[0][1]
 
     filtered_perfect_data[skin] = skin_info
 
