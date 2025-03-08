@@ -174,7 +174,6 @@ def analyze_orders_weights(price, orders):
 
 if __name__ == "__main__":
     options = webdriver.ChromeOptions()
-    options.add_extension("/home/pustrace/programming/steam_parser/main/extensions/steam_invenory_helper2.3.1_0.crx")
     options.add_argument("--start-maximized")
     
     service = Service()
