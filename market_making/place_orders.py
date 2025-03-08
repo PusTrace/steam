@@ -10,19 +10,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
-from datetime import datetime
 
 import sys
 import os
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
-from utils.utils import save_data, signal_handler
+from utils.utils import save_data, signal_handler, generate_market_url
 from orders.get_order_info import get_orders
 from price.get_steam_price import get_steam_price
 
 def get_market_data(skin, skin_id, timestamp_orders, timestamp_price):
-    today = datetime.date.today().isoformat()  # Пример формата 'YYYY-MM-DD'
+    today = date.today()  # Пример формата 'YYYY-MM-DD'
     
     # Проверяем, если ордеры уже получены сегодня, читаем их из файла
     item_orders = None
@@ -83,7 +82,7 @@ def steam_login(driver):
     WebDriverWait(driver, 99999999999).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[7]/div[7]/div[1]/div[1]/div/div/div/div[1]/div[1]/span[1]")))
     print("Авторизация в Steam выполнена.")
     
-def buy_skin(order_price, url):
+def buy_skin(driver, url, order_price, weight_number_of_items):
     wait = WebDriverWait(driver, 10)  # Ожидание до 10 секунд
     driver.get(url)
     try:
@@ -120,6 +119,8 @@ def analyze_orders_weights(price, orders):
     # Извлекаем агрегированные ордера; каждый ордер имеет вид: [price, aggregated_quantity, ...]
     buy_order_graph = orders.get("buy_order_graph", [])
     
+    passive_check_orders = 0
+
     max_multiplier = 2  # Максимальный коэффициент увеличения цены для стенки
     current_price = median_price if median_price is not None else lowest_price
 
@@ -195,50 +196,65 @@ if __name__ == "__main__":
 
     consecutive_errors = 0
     max_attempts = 6
-    today = date.today()  # Текущая дата
+    passive_check_orders = 0
 
-    for skin, data in perfect.items():
+
+    for skin, data in sorted(perfect.items(), key=lambda x: x[1].get("weight_of_items", 0), reverse=True):
         # start of passive analyze
         approx_min = data.get("approx_min")
         approx_max = data.get("approx_max")
         median_price = data.get("median_price")
         lowest_price = data.get("lowest_price")
+        volume = data.get("volume")
+        weight_number_of_items = data.get("weight_number_of_items")
         approx_price = None
         if approx_min is None or approx_max is None:
             print(f"Не удалось получить данные о цене для '{skin}'")
         
         if median_price is not None:
-            pass_check_price = median_price
+            current_price_pass = median_price
         else:
-            pass_check_price = lowest_price
+            current_price_pass = lowest_price
         
-        if (approx_max - approx_min) > pass_check_price*0.13:
+        if (approx_max - approx_min) > current_price_pass*0.13:
             approx_price = approx_min
+        
+        skin_orders = orders.get(skin, {})
+        buy_order_graph = skin_orders.get("buy_order_graph", [])
+        for i in range(len(buy_order_graph) - 1):
+            price_high = buy_order_graph[i][0]
+            price_low = buy_order_graph[i+1][0]
+            if price_high > current_price_pass > price_low:
+                passive_check_orders = buy_order_graph[i+1][1]
+        if passive_check_orders > volume * 3:
+            # End of passive analyze
+            if skin in item_nameids:
+                skin_id = item_nameids[skin]
+            if skin in logs:
+                print(f"Логи для '{skin}' уже существуют")
+                continue
             
-        # End of passive analyze
-        if skin in item_nameids:
-            skin_id = item_nameids[skin]
-        if skin in logs:
-            print(f"Логи для '{skin}' уже существуют")
-            continue
-           
-        if skin in orders:
-            date_orders = orders[skin].get("timestamp_orders")
-            timestamp_orders = datetime.fromisoformat(date_orders).date()
-        if skin in perfect:
-            date_price = perfect[skin].get("timestamp")    
-            timestamp_price = datetime.fromisoformat(date_price).date()
-        
-        # Active analyze
-        price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
-        
-        decision, order_price = analyze_orders_weights(price, orders)
-        
-        # Buy logic
-        if decision:
-            buy_skin(order_price, skin)
-            logs[skin] = {"order_price": order_price, "timestamp": datetime.now().isoformat()}
-            save_data(logs)
+            if skin in orders:
+                date_orders = orders[skin].get("timestamp_orders")
+                timestamp_orders = datetime.fromisoformat(date_orders).date()
+            if skin in perfect:
+                date_price = perfect[skin].get("timestamp")    
+                timestamp_price = datetime.fromisoformat(date_price).date()
+            
+            # Active analyze
+            price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
+            
+            decision, order_price = analyze_orders_weights(price, orders)
+            
+            # Buy logic
+            if decision:
+                url = generate_market_url(skin)
+                buy_skin(driver, url, order_price, weight_number_of_items)
+                logs[skin] = {"order_price": order_price,
+                              "weight_number_of_items": weight_number_of_items,
+                              "url": url,
+                              "timestamp": datetime.now().isoformat()}
+                save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
         
         
     print("Выставление ордеров завершенно.")
