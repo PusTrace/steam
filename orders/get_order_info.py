@@ -17,7 +17,7 @@ STEAM_API_URL = "https://steamcommunity.com/market/itemordershistogram"
 MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
 
 
-def get_steam_market_info(skin):
+def get_orders(skin_id):
     params = {
         "country": "KZ",
         "language": "english",
@@ -79,7 +79,7 @@ if __name__ == "__main__":
             print(skin)
             continue
         print(f"Запрашиваем данные для {skin}")
-        item_data = get_steam_market_info(skin_id)
+        item_data = get_orders(skin_id)
         
         if item_data:
             data[skin] = item_data

@@ -63,3 +63,17 @@ def run_router_script():
         subprocess.run(["python", "/home/pustrace/programming/trade/steam/utils/router.py"], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Ошибка при запуске router.py: {e}")
+        
+def generate_market_hash_name(skin):
+    """Генерирует полное название предмета для Steam Market"""
+    wear_conditions = [
+        "Factory New",
+        "Minimal Wear",
+        "Field-Tested",
+        "Well-Worn",
+        "Battle-Scarred"
+    ]
+    market_names = []
+    market_names.extend(f"StatTrak™ {skin} ({wear})" for wear in wear_conditions)
+    market_names.extend(f"{skin} ({wear})" for wear in wear_conditions)
+    return market_names

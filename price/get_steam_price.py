@@ -1,17 +1,21 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, date
 import time
 import signal
 import sys
-import subprocess  # Для вызова программы router.py
+import os
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+from utils.utils import save_data, generate_market_hash_name, signal_handler, run_router_script
 
 # Константы для Steam API
 STEAM_API_URL = "https://steamcommunity.com/market/priceoverview/"
 
 MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
 
-def get_steam_market_info(market_hash_name):
+def get_steam_price(market_hash_name):
     params = {
         "appid": "730",
         "currency": 37,
@@ -47,53 +51,7 @@ def get_steam_market_info(market_hash_name):
         print(f"Ошибка при разборе JSON для {market_hash_name}: {e}")
         return None
 
-def save_market_data(new_data, filename):
-    """Сохраняет или обновляет данные в JSON файле"""
-    try:
-        # Пытаемся прочитать существующие данные
-        with open(filename, 'r', encoding='utf-8') as f:
-            existing_data = json.load(f)
-        # Обновляем только новые данные
-        existing_data.update(new_data)
-        # Сохраняем обновленные данные
-        with open(filename, 'w', encoding='utf-8') as f:
-            json.dump(existing_data, f, ensure_ascii=False, indent=4)
-        print(f"Данные успешно сохранены в {filename}")
-    except Exception as e:
-        print(f"Ошибка при сохранении данных: {e}")
 
-def generate_market_hash_name(skin):
-    """Генерирует полное название предмета для Steam Market"""
-    wear_conditions = [
-        "Factory New",
-        "Minimal Wear",
-        "Field-Tested",
-        "Well-Worn",
-        "Battle-Scarred"
-    ]
-    market_names = []
-    market_names.extend(f"StatTrak™ {skin} ({wear})" for wear in wear_conditions)
-    market_names.extend(f"{skin} ({wear})" for wear in wear_conditions)
-    return market_names
-
-def signal_handler(signum, frame):
-    """Обработчик сигнала прерывания"""
-    global market_data
-    print("\nПолучен сигнал прерывания. Сохраняем данные перед выходом...")
-    if 'market_data' in globals() and market_data:
-        save_market_data(market_data, "/home/pustrace/programming/trade/steam/database/database.json")
-    print("Данные сохранены. Завершение работы.")
-    sys.exit(0)
-
-def run_router_script():
-    """Запускает router.py"""
-    try:
-        subprocess.run(["python", "/home/pustrace/programming/trade/steam/utils/router.py"], check=True)
-        print("router.py успешно запущен.")
-        print("Ожидаем 6.5 минут...")
-        time.sleep(400)
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при запуске router.py: {e}")
 
 if __name__ == "__main__":
     # Регистрируем обработчик сигнала
@@ -105,6 +63,7 @@ if __name__ == "__main__":
     with open ("/home/pustrace/programming/trade/steam/database/database.json", 'r', encoding='utf-8') as f:
         market_data = json.load(f)
     consecutive_429_errors = 0  # Счётчик ошибок 429 подряд
+    today = date.today()  # Текущая дата
 
     for skin in skins:
         market_hash_names = generate_market_hash_name(skin)
@@ -115,11 +74,11 @@ if __name__ == "__main__":
                 continue
 
             print(f"\nПолучение данных для {market_hash_name}...")
-            item_data = get_steam_market_info(market_hash_name)
+            item_data = get_steam_price(market_hash_name)
             
             if item_data:
                 market_data[market_hash_name] = item_data
-                save_market_data({market_hash_name: item_data}, "/home/pustrace/programming/trade/steam/database/database.json")
+                save_data({market_hash_name: item_data}, "/home/pustrace/programming/trade/steam/database/database.json")
                 consecutive_429_errors = 0
                 time.sleep(3.5)
             else:
