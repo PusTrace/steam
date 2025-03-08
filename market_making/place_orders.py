@@ -113,38 +113,63 @@ def buy_skin(order_price, url):
     except Exception as e:
         driver.quit()
 
-def analyze_orders_weights(orders, current_price, current_sells, max_multiplier=2.0):
-    threshold_75 = current_price * 0.69
-    threshold_82 = current_price * 0.77
-    base_wall_qty_threshold = current_sells * 0.1
+def analyze_orders_weights(price, orders):
+    median_price = price.get("median_price")
+    lowest_price = price.get("lowest_price")
+    volume = price.get("volume")
+    # Извлекаем агрегированные ордера; каждый ордер имеет вид: [price, aggregated_quantity, ...]
+    buy_order_graph = orders.get("buy_order_graph", [])
+    
+    max_multiplier = 2  # Максимальный коэффициент увеличения цены для стенки
+    current_price = median_price if median_price is not None else lowest_price
 
-    orders_above_82 = [o for o in orders if o["price"] > threshold_82]
-    cumulative_qty = sum(o["quantity"] for o in orders_above_82)
-    if cumulative_qty > current_sells * 1.2:
+    # Пороговые значения
+    threshold_74 = current_price * 0.74
+    threshold_82 = current_price * 0.82
+    base_wall_qty_threshold = volume * 0.1
+    for i in range(len(buy_order_graph) - 1):
+        price_high = buy_order_graph[i][0]
+        price_low = buy_order_graph[i+1][0]
+        if price_high > threshold_82 > price_low:
+            passive_check_orders = buy_order_graph[i+1][1]
+    if passive_check_orders > volume * 2:
         return False, None
+    # Вычисляем "эффективное" количество ордеров для каждого уровня:
+    # Для каждого уровня effective_qty = aggregated_qty текущего уровня - aggregated_qty следующего уровня
+    effective_orders = []
+    for i, order in enumerate(buy_order_graph):
+        price_level = order[0]
+        aggregated_qty = order[1]
+        next_aggregated_qty = buy_order_graph[i + 1][1] if i < len(buy_order_graph) - 1 else 0
+        effective_qty = aggregated_qty - next_aggregated_qty
+        effective_orders.append((price_level, effective_qty))
 
-    candidate_price = round(threshold_75, 2)
+    # Фильтруем ордера, у которых цена находится между threshold_74 и threshold_82
+    filtered_orders = [(p, q) for p, q in effective_orders if threshold_74 < p <= threshold_82]
+    # Сортируем по возрастанию цены для последовательного прохода от нижнего порога
+    filtered_orders.sort(key=lambda x: x[0])
+
+    candidate_price = round(threshold_74, 2)
     print(f"Начинаем с candidate_price = {candidate_price:.2f}")
 
-    relevant_orders = [o for o in orders if threshold_75 < o["price"] <= threshold_82]
-    relevant_orders.sort(key=lambda o: o["price"])
-
-    for order in relevant_orders:
-        if order["price"] <= candidate_price:
+    for price_level, effective_qty in filtered_orders:
+        if price_level <= candidate_price:
             continue
 
-        multiplier = 1 + (max_multiplier - 1) * ((order["price"] - threshold_75) / (threshold_82 - threshold_75))
+        # Вычисляем динамический множитель и пороговое значение
+        multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_74) / (threshold_82 - threshold_74))
         dynamic_threshold = base_wall_qty_threshold * multiplier
 
-        if order["quantity"] >= dynamic_threshold:
-            candidate_price = order["price"] + 0.01
-            print(f"Оrдер на {order['price']:.2f} с количеством {order['quantity']:.2f} (порог {dynamic_threshold:.2f}) " 
+        if effective_qty >= dynamic_threshold:
+            candidate_price = price_level + 0.01
+            print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} (порог {dynamic_threshold:.2f}) "
                   f"считается стенкой. Новая candidate_price = {candidate_price:.2f}")
 
     if candidate_price >= threshold_82:
         return False, None
 
     return True, candidate_price
+
 
 if __name__ == "__main__":
     options = webdriver.ChromeOptions()
@@ -173,8 +198,24 @@ if __name__ == "__main__":
     today = date.today()  # Текущая дата
 
     for skin, data in perfect.items():
-        # Перед активным анализом добавить пассивный анализ
+        # start of passive analyze
+        approx_min = data.get("approx_min")
+        approx_max = data.get("approx_max")
+        median_price = data.get("median_price")
+        lowest_price = data.get("lowest_price")
+        approx_price = None
+        if approx_min is None or approx_max is None:
+            print(f"Не удалось получить данные о цене для '{skin}'")
+        
+        if median_price is not None:
+            pass_check_price = median_price
+        else:
+            pass_check_price = lowest_price
+        
+        if (approx_max - approx_min) > pass_check_price*0.13:
+            approx_price = approx_min
             
+        # End of passive analyze
         if skin in item_nameids:
             skin_id = item_nameids[skin]
         if skin in logs:
@@ -188,10 +229,12 @@ if __name__ == "__main__":
             date_price = perfect[skin].get("timestamp")    
             timestamp_price = datetime.fromisoformat(date_price).date()
         
-        # Активный анализ
+        # Active analyze
         price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
         
-        decision, order_price, num_of_skins = analyze_orders_weights(price, orders)
+        decision, order_price = analyze_orders_weights(price, orders)
+        
+        # Buy logic
         if decision:
             buy_skin(order_price, skin)
             logs[skin] = {"order_price": order_price, "timestamp": datetime.now().isoformat()}
