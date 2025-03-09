@@ -171,7 +171,7 @@ def analyze_orders_weights(price, orders, approx_price):
     volume_str = price.get("volume")
     volume = int(volume_str.replace(",", "").strip())
     
-    # Инициализация переменных
+    # Обработка цен
     if median_price_str is not None:
         median_price = float(median_price_str.replace("₸", "").replace(",", ".").replace(" ", "").strip())
     else:
@@ -182,49 +182,50 @@ def analyze_orders_weights(price, orders, approx_price):
     else:
         lowest_price = None
 
-    # Теперь проверяем значение median_price
     if median_price is None:
         median_price = lowest_price
-        
     if lowest_price is None:
         lowest_price = median_price
 
-    # Извлекаем агрегированные ордера; каждый ордер имеет вид: [price, aggregated_quantity, ...]
     buy_order_graph = orders.get("buy_order_graph", [])
     
-    passive_check_orders = 0
-
-    max_multiplier = 2  # Максимальный коэффициент увеличения цены для стенки
+    active_check_orders = 0
+    max_multiplier = 2
     current_price = median_price if median_price is not None else lowest_price
 
-    # Пороговые значения
+    # Установка пороговых значений
     if approx_price is not None:
         threshold_down = approx_price * 0.87
         threshold_up = approx_price * 0.97
     else:
         threshold_down = current_price * 0.74
         threshold_up = current_price * 0.84
+
     base_wall_qty_threshold = volume * 0.1
+
     for i in range(len(buy_order_graph) - 1):
         price_high = buy_order_graph[i][0]
         price_low = buy_order_graph[i+1][0]
         if price_high > threshold_up > price_low:
-            passive_check_orders = buy_order_graph[i+1][1]
-    if passive_check_orders > volume * 2.5:
+            active_check_orders = buy_order_graph[i+1][1]
+    if active_check_orders > volume * 2.5:
+        logs[skin] = {"active_check_orders > volume*2.5": [active_check_orders, volume],
+                      "timestamp_skip": datetime.now().isoformat()}
         return False, None
-    # Вычисляем "эффективное" количество ордеров для каждого уровня:
-    # Для каждого уровня effective_qty = aggregated_qty текущего уровня - aggregated_qty следующего уровня
+
+    # Корректный расчёт "эффективного" количества ордеров
     effective_orders = []
     for i, order in enumerate(buy_order_graph):
         price_level = order[0]
         aggregated_qty = order[1]
-        next_aggregated_qty = buy_order_graph[i + 1][1] if i < len(buy_order_graph) - 1 else 0
-        effective_qty = aggregated_qty - next_aggregated_qty
+        if i == 0:
+            effective_qty = aggregated_qty
+        else:
+            effective_qty = aggregated_qty - buy_order_graph[i-1][1]
         effective_orders.append((price_level, effective_qty))
 
-    # Фильтруем ордера, у которых цена находится между threshold_down и threshold_up
+    # Фильтруем ордера по порогам
     filtered_orders = [(p, q) for p, q in effective_orders if threshold_down < p <= threshold_up]
-    # Сортируем по возрастанию цены для последовательного прохода от нижнего порога
     filtered_orders.sort(key=lambda x: x[0])
 
     candidate_price = round(threshold_down, 2)
@@ -232,9 +233,9 @@ def analyze_orders_weights(price, orders, approx_price):
 
     for price_level, effective_qty in filtered_orders:
         if price_level <= candidate_price:
+            
             continue
 
-        # Вычисляем динамический множитель и пороговое значение
         multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_down) / (threshold_up - threshold_down))
         dynamic_threshold = base_wall_qty_threshold * multiplier
 
@@ -242,11 +243,15 @@ def analyze_orders_weights(price, orders, approx_price):
             candidate_price = price_level + 0.01
             print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} (порог {dynamic_threshold:.2f}) "
                   f"считается стенкой. Новая candidate_price = {candidate_price:.2f}")
-
+        else:
+            print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} не прошёл проверку (требуется {dynamic_threshold:.2f}).")
     if candidate_price >= threshold_up:
+        logs[skin] = {"candidate_price >= threshold_up": [candidate_price, threshold_up],
+                      "timestamp_skip": datetime.now().isoformat()}
         return False, None
 
     return True, candidate_price
+
 
 
 
@@ -285,7 +290,6 @@ if __name__ == "__main__":
         if skin in logs: 
             print (f"Orders is exists for {skin}")
             continue
-        # start of passive analyze
         approx_min = data.get("approx_min")
         approx_max = data.get("approx_max")
         median_price = data.get("median_price")
@@ -296,56 +300,45 @@ if __name__ == "__main__":
         if approx_min is None or approx_max is None:
             print(f"Не удалось получить данные о цене для '{skin}'")
         
-        if median_price is not None:
+        if median_price is not None or median_price < lowest_price:
             current_price_pass = median_price
         else:
             current_price_pass = lowest_price
         
-        if (approx_max - approx_min) > current_price_pass*0.13:
+        if (approx_max - approx_min) > current_price_pass*0.2:
             approx_price = approx_min
+            logs[skin] = {"approx": [approx_max, approx_price, approx_max-approx_min]}
+            save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
         
-        skin_orders = all_orders.get(skin, {})
-        buy_order_graph = skin_orders.get("buy_order_graph", [])
-        for i in range(len(buy_order_graph) - 1):
-            price_high = buy_order_graph[i][0]
-            price_low = buy_order_graph[i+1][0]
-            if price_high > current_price_pass > price_low:
-                passive_check_orders = buy_order_graph[i+1][1]
-        if passive_check_orders > volume * 3:
-            # End of passive analyze
-            if skin in item_nameids:
-                skin_id = item_nameids[skin]
-            if skin in logs:
-                print(f"Логи для '{skin}' уже существуют")
-                continue
-            
-            if skin in all_orders:
-                date_orders = all_orders[skin].get("timestamp_orders")
-                timestamp_orders = datetime.fromisoformat(date_orders).date()
-            if skin in database:
-                date_price = perfect[skin].get("timestamp")    
-                timestamp_price = datetime.fromisoformat(date_price).date()
-            
-            # Active analyze
-            print(f"Получение данных для '{skin}' .")
-            price, skin_orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
-            
-            decision, order_price = analyze_orders_weights(price, skin_orders, approx_price)
-            
-            # Buy logic
-            if decision:
-                url = generate_market_url(skin)
-                weight_number_of_items = round(int(weight_number_of_items), 0)
-                buy_skin(driver_headless, url, order_price, weight_number_of_items)
-                logs[skin] = {"order_price": order_price,
-                              "weight_number_of_items": weight_number_of_items,
-                              "url": url,
-                              "timestamp": datetime.now().isoformat()}
-                save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
-            else:
-                logs[skin] = {"timestamp_skip": datetime.now().isoformat()}
-                save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
+        if skin in item_nameids:
+            skin_id = item_nameids[skin]
+        if skin in logs:
+            print(f"Логи для '{skin}' уже существуют")
+            continue
         
+        if skin in all_orders:
+            date_orders = all_orders[skin].get("timestamp_orders")
+            timestamp_orders = datetime.fromisoformat(date_orders).date()
+        if skin in database:
+            date_price = database[skin].get("timestamp")    
+            timestamp_price = datetime.fromisoformat(date_price).date()
         
+        print(f"Получение данных для '{skin}' .")
+        price, skin_orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
+        
+        decision, order_price = analyze_orders_weights(price, skin_orders, approx_price)
+        
+        # Buy logic
+        if decision:
+            url = generate_market_url(skin)
+            weight_number_of_items = round(int(weight_number_of_items), 0)
+            buy_skin(driver_headless, url, order_price, weight_number_of_items)
+            logs[skin] = {"order_price": order_price,
+                            "weight_number_of_items": weight_number_of_items,
+                            "url": url,
+                            "timestamp": datetime.now().isoformat()}
+            save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
+    
+    
     print("Выставление ордеров завершено.")
     driver_headless.quit()

@@ -918,10 +918,10 @@
         "timestamp": "2025-02-03T14:41:38.385958"
     },
     "USP-S | Forest Leaves (Factory New)": {
-        "lowest_price": "743,99₸",
-        "median_price": "740,86₸",
-        "volume": "58",
-        "timestamp": "2025-03-09T19:07:58.343900"
+        "lowest_price": "748,65₸",
+        "median_price": "742,24₸",
+        "volume": "55",
+        "timestamp": "2025-03-09T20:04:55.595401"
     },
     "USP-S | Forest Leaves (Minimal Wear)": {
         "lowest_price": "74,98₸",
@@ -3516,10 +3516,10 @@
         "timestamp": "2025-02-03T15:16:08.156922"
     },
     "Desert Eagle | Corinthian (Minimal Wear)": {
-        "lowest_price": null,
-        "median_price": "226,27₸",
-        "volume": "324",
-        "timestamp": "2025-02-03T15:16:10.620542"
+        "lowest_price": "282,55₸",
+        "median_price": "294,84₸",
+        "volume": "308",
+        "timestamp": "2025-03-09T23:08:20.944097"
     },
     "Desert Eagle | Corinthian (Field-Tested)": {
         "lowest_price": "183,96₸",
@@ -4614,10 +4614,10 @@
         "timestamp": "2025-02-03T15:25:36.221864"
     },
     "P250 | Valence (Battle-Scarred)": {
-        "lowest_price": null,
-        "median_price": "84,25₸",
-        "volume": "61",
-        "timestamp": "2025-03-09T18:50:43.989355"
+        "lowest_price": "98,25₸",
+        "median_price": "87,16₸",
+        "volume": "60",
+        "timestamp": "2025-03-09T20:05:18.358361"
     },
     "P250 | Iron Clad (Factory New)": {
         "lowest_price": "353,13₸",
@@ -4736,8 +4736,8 @@
     "P250 | Verdigris (Minimal Wear)": {
         "lowest_price": "233,35₸",
         "median_price": "228,50₸",
-        "volume": "95",
-        "timestamp": "2025-03-09T19:07:45.089399"
+        "volume": "89",
+        "timestamp": "2025-03-09T20:04:41.707997"
     },
     "P250 | Verdigris (Field-Tested)": {
         "lowest_price": "110,94₸",
@@ -6246,10 +6246,10 @@
         "timestamp": "2025-02-03T15:51:21.052882"
     },
     "P250 | Valence (Field-Tested)": {
-        "lowest_price": "84,27₸",
-        "median_price": "84,08₸",
-        "volume": "307",
-        "timestamp": "2025-02-03T15:51:23.369350"
+        "lowest_price": "95,71₸",
+        "median_price": "96,12₸",
+        "volume": "313",
+        "timestamp": "2025-03-09T23:08:45.249393"
     },
     "P250 | Exchanger (Well-Worn)": {
         "lowest_price": "126,52₸",
@@ -6270,10 +6270,10 @@
         "timestamp": "2025-02-03T15:51:30.402170"
     },
     "P250 | Cassette (Minimal Wear)": {
-        "lowest_price": "66,77₸",
-        "median_price": "69,76₸",
-        "volume": "778",
-        "timestamp": "2025-02-03T15:51:32.649663"
+        "lowest_price": null,
+        "median_price": "68,93₸",
+        "volume": "863",
+        "timestamp": "2025-03-09T23:08:04.050493"
     },
     "Five-SeveN | Neon Kimono (Field-Tested)": {
         "lowest_price": "185 863,46₸",
@@ -6900,10 +6900,10 @@
         "timestamp": "2025-02-03T15:56:53.264187"
     },
     "CZ75-Auto | Red Astor (Field-Tested)": {
-        "lowest_price": "241,62₸",
-        "median_price": "242,36₸",
-        "volume": "82",
-        "timestamp": "2025-02-03T15:56:55.522600"
+        "lowest_price": "270,11₸",
+        "median_price": "270,61₸",
+        "volume": "77",
+        "timestamp": "2025-03-09T20:06:48.798626"
     },
     "CZ75-Auto | Red Astor (Well-Worn)": {
         "lowest_price": "233,01₸",
@@ -7542,10 +7542,10 @@
         "timestamp": "2025-02-03T16:02:35.859030"
     },
     "P2000 | Handgun (Field-Tested)": {
-        "lowest_price": "464,66₸",
-        "median_price": "441,60₸",
-        "volume": "73",
-        "timestamp": "2025-02-03T16:02:38.343439"
+        "lowest_price": null,
+        "median_price": "510,43₸",
+        "volume": "63",
+        "timestamp": "2025-03-09T22:49:53.706178"
     },
     "P2000 | Handgun (Well-Worn)": {
         "lowest_price": "358,34₸",
@@ -7699,9 +7699,9 @@
     },
     "P2000 | Ivory (Minimal Wear)": {
         "lowest_price": "122,82₸",
-        "median_price": "125,29₸",
-        "volume": "39",
-        "timestamp": "2025-03-09T18:49:49.569147"
+        "median_price": "117,50₸",
+        "volume": "41",
+        "timestamp": "2025-03-09T20:05:00.186201"
     },
     "P2000 | Ivory (Field-Tested)": {
         "lowest_price": "74,22₸",
@@ -8694,10 +8694,10 @@
         "timestamp": "2025-02-03T16:12:23.698003"
     },
     "Tec-9 | Cracked Opal (Minimal Wear)": {
-        "lowest_price": "111,79₸",
-        "median_price": "85,75₸",
-        "volume": "126",
-        "timestamp": "2025-02-03T16:12:25.938409"
+        "lowest_price": "121,50₸",
+        "median_price": "120,62₸",
+        "volume": "90",
+        "timestamp": "2025-03-09T20:07:26.310802"
     },
     "Tec-9 | Cracked Opal (Field-Tested)": {
         "lowest_price": "67,98₸",
@@ -10548,10 +10548,10 @@
         "timestamp": "2025-02-03T16:33:55.414766"
     },
     "Dual Berettas | Dualing Dragons (Minimal Wear)": {
-        "lowest_price": "304,67₸",
-        "median_price": "299,11₸",
-        "volume": "74",
-        "timestamp": "2025-02-03T16:33:57.739703"
+        "lowest_price": "303₸",
+        "median_price": "304,36₸",
+        "volume": "92",
+        "timestamp": "2025-03-09T20:07:07.620871"
     },
     "Dual Berettas | Dualing Dragons (Field-Tested)": {
         "lowest_price": "160,16₸",
@@ -11718,10 +11718,10 @@
         "timestamp": "2025-02-03T16:43:48.112396"
     },
     "P90 | Elite Build (Well-Worn)": {
-        "lowest_price": "210,80₸",
-        "median_price": "161,06₸",
-        "volume": "47",
-        "timestamp": "2025-02-03T16:43:50.429928"
+        "lowest_price": "233,29₸",
+        "median_price": "230,50₸",
+        "volume": "65",
+        "timestamp": "2025-03-09T20:06:29.994967"
     },
     "P90 | Elite Build (Battle-Scarred)": {
         "lowest_price": "247,82₸",
@@ -13206,10 +13206,10 @@
         "timestamp": "2025-02-03T17:00:32.312543"
     },
     "UMP-45 | Labyrinth (Field-Tested)": {
-        "lowest_price": "66,59₸",
-        "median_price": "66,55₸",
-        "volume": "48",
-        "timestamp": "2025-02-03T17:00:34.623879"
+        "lowest_price": "73,46₸",
+        "median_price": "73,71₸",
+        "volume": "50",
+        "timestamp": "2025-03-09T22:50:02.187368"
     },
     "UMP-45 | Labyrinth (Well-Worn)": {
         "lowest_price": "89,61₸",
@@ -13326,10 +13326,10 @@
         "timestamp": "2025-02-03T17:01:34.656722"
     },
     "UMP-45 | Mudder (Factory New)": {
-        "lowest_price": "32,95₸",
-        "median_price": "29,68₸",
-        "volume": "39",
-        "timestamp": "2025-02-03T17:01:36.927845"
+        "lowest_price": "31,22₸",
+        "median_price": "42,72₸",
+        "volume": "25",
+        "timestamp": "2025-03-09T22:50:43.613168"
     },
     "UMP-45 | Mudder (Minimal Wear)": {
         "lowest_price": "5,87₸",
@@ -13344,10 +13344,10 @@
         "timestamp": "2025-02-03T17:01:41.484386"
     },
     "UMP-45 | Mudder (Well-Worn)": {
-        "lowest_price": "5,32₸",
-        "median_price": "5,01₸",
-        "volume": "227",
-        "timestamp": "2025-02-03T17:01:43.741812"
+        "lowest_price": "5,58₸",
+        "median_price": "5,53₸",
+        "volume": "212",
+        "timestamp": "2025-03-09T22:50:52.156125"
     },
     "UMP-45 | Mudder (Battle-Scarred)": {
         "lowest_price": "4,96₸",
@@ -14304,10 +14304,10 @@
         "timestamp": "2025-02-03T17:09:57.764755"
     },
     "MAC-10 | Whitefish (Field-Tested)": {
-        "lowest_price": "117,41₸",
-        "median_price": "104,55₸",
-        "volume": "135",
-        "timestamp": "2025-02-03T17:10:00.066231"
+        "lowest_price": null,
+        "median_price": "144,18₸",
+        "volume": "194",
+        "timestamp": "2025-03-09T23:09:45.414465"
     },
     "MAC-10 | Whitefish (Well-Worn)": {
         "lowest_price": "98,80₸",
@@ -14364,10 +14364,10 @@
         "timestamp": "2025-02-03T17:10:21.400628"
     },
     "MAC-10 | Classic Crate (Field-Tested)": {
-        "lowest_price": "105,31₸",
-        "median_price": "100,62₸",
-        "volume": "48",
-        "timestamp": "2025-02-03T17:10:23.665174"
+        "lowest_price": "116,67₸",
+        "median_price": "87,35₸",
+        "volume": "54",
+        "timestamp": "2025-03-09T23:10:23.003567"
     },
     "MAC-10 | Classic Crate (Well-Worn)": {
         "lowest_price": "84,96₸",
@@ -15324,10 +15324,10 @@
         "timestamp": "2025-02-03T17:18:42.200259"
     },
     "MP7 | Akoben (Minimal Wear)": {
-        "lowest_price": "209,15₸",
-        "median_price": "194,82₸",
-        "volume": "31",
-        "timestamp": "2025-02-03T17:18:44.481260"
+        "lowest_price": "200₸",
+        "median_price": "199,11₸",
+        "volume": "32",
+        "timestamp": "2025-03-09T22:50:34.978339"
     },
     "MP7 | Akoben (Field-Tested)": {
         "lowest_price": "148,87₸",
@@ -15367,9 +15367,9 @@
     },
     "MP7 | Armor Core (Minimal Wear)": {
         "lowest_price": "127,23₸",
-        "median_price": "113,33₸",
+        "median_price": "127,24₸",
         "volume": "64",
-        "timestamp": "2025-03-09T18:50:23.681001"
+        "timestamp": "2025-03-09T20:05:09.164982"
     },
     "MP7 | Armor Core (Field-Tested)": {
         "lowest_price": "65,75₸",
@@ -20898,10 +20898,10 @@
         "timestamp": "2025-02-03T19:07:51.245097"
     },
     "AWP | Acheron (Well-Worn)": {
-        "lowest_price": "653,35₸",
-        "median_price": "594,99₸",
-        "volume": "100",
-        "timestamp": "2025-02-03T19:07:53.510819"
+        "lowest_price": "761,45₸",
+        "median_price": "805,70₸",
+        "volume": "105",
+        "timestamp": "2025-03-09T23:09:15.126807"
     },
     "AWP | Acheron (Battle-Scarred)": {
         "lowest_price": null,
@@ -24246,10 +24246,10 @@
         "timestamp": "2025-02-03T19:47:21.440958"
     },
     "AUG | Ricochet (Battle-Scarred)": {
-        "lowest_price": "61,04₸",
-        "median_price": "60,25₸",
+        "lowest_price": null,
+        "median_price": "59,57₸",
         "volume": "25",
-        "timestamp": "2025-03-09T19:07:40.655436"
+        "timestamp": "2025-03-09T20:04:37.156026"
     },
     "AUG | Triqua (Factory New)": {
         "lowest_price": "312,16₸",
@@ -24276,10 +24276,10 @@
         "timestamp": "2025-02-03T19:47:32.963193"
     },
     "AUG | Triqua (Battle-Scarred)": {
-        "lowest_price": "49,12₸",
-        "median_price": "36,85₸",
-        "volume": "51",
-        "timestamp": "2025-03-09T19:07:53.937683"
+        "lowest_price": null,
+        "median_price": "37,46₸",
+        "volume": "54",
+        "timestamp": "2025-03-09T20:04:51.170373"
     },
     "AUG | Amber Slipstream (Well-Worn)": {
         "lowest_price": "137,40₸",
@@ -26136,10 +26136,10 @@
         "timestamp": "2025-02-03T20:10:44.927628"
     },
     "Galil AR | Black Sand (Well-Worn)": {
-        "lowest_price": "86,59₸",
-        "median_price": "80,82₸",
-        "volume": "40",
-        "timestamp": "2025-02-03T20:11:03.035714"
+        "lowest_price": "104,88₸",
+        "median_price": "99,68₸",
+        "volume": "72",
+        "timestamp": "2025-03-09T20:06:39.351786"
     },
     "Galil AR | Black Sand (Battle-Scarred)": {
         "lowest_price": "92,39₸",
@@ -27186,10 +27186,10 @@
         "timestamp": "2025-02-03T21:15:15.720627"
     },
     "SG 553 | Aerial (Field-Tested)": {
-        "lowest_price": "99,06₸",
-        "median_price": "89,64₸",
-        "volume": "37",
-        "timestamp": "2025-02-03T21:15:18.022980"
+        "lowest_price": "178,08₸",
+        "median_price": "176,91₸",
+        "volume": "54",
+        "timestamp": "2025-03-09T20:07:17.062984"
     },
     "SG 553 | Aerial (Well-Worn)": {
         "lowest_price": null,
@@ -27336,10 +27336,10 @@
         "timestamp": "2025-02-03T21:16:29.482504"
     },
     "Galil AR | VariCamo (Factory New)": {
-        "lowest_price": "74,22₸",
-        "median_price": "70,62₸",
-        "volume": "236",
-        "timestamp": "2025-02-03T21:16:31.761707"
+        "lowest_price": null,
+        "median_price": "135,31₸",
+        "volume": "419",
+        "timestamp": "2025-03-09T23:07:48.704936"
     },
     "FAMAS | Prime Conspiracy (Minimal Wear)": {
         "lowest_price": "58 726,65₸",
@@ -28554,10 +28554,10 @@
         "timestamp": "2025-02-03T21:41:18.680866"
     },
     "SSG 08 | Hand Brake (Factory New)": {
-        "lowest_price": null,
-        "median_price": "570,03₸",
-        "volume": "77",
-        "timestamp": "2025-02-03T21:41:20.992937"
+        "lowest_price": "540,39₸",
+        "median_price": "566,03₸",
+        "volume": "62",
+        "timestamp": "2025-03-09T22:51:00.729289"
     },
     "SSG 08 | Hand Brake (Minimal Wear)": {
         "lowest_price": "297,39₸",
@@ -29340,10 +29340,10 @@
         "timestamp": "2025-02-03T21:48:13.072518"
     },
     "SCAR-20 | Poultrygeist (Minimal Wear)": {
-        "lowest_price": "70,53₸",
-        "median_price": "62,28₸",
-        "volume": "618",
-        "timestamp": "2025-02-03T21:48:15.385658"
+        "lowest_price": "96,88₸",
+        "median_price": "85,02₸",
+        "volume": "558",
+        "timestamp": "2025-03-09T23:08:12.460938"
     },
     "SCAR-20 | Poultrygeist (Field-Tested)": {
         "lowest_price": "34,97₸",
@@ -30840,10 +30840,10 @@
         "timestamp": "2025-02-03T22:01:04.635925"
     },
     "Sawed-Off | Origami (Minimal Wear)": {
-        "lowest_price": "130₸",
-        "median_price": "134,42₸",
-        "volume": "52",
-        "timestamp": "2025-03-09T18:50:14.429067"
+        "lowest_price": "126,97₸",
+        "median_price": "128,35₸",
+        "volume": "49",
+        "timestamp": "2025-03-09T20:05:04.715898"
     },
     "Sawed-Off | Origami (Field-Tested)": {
         "lowest_price": "61,13₸",
@@ -31512,10 +31512,10 @@
         "timestamp": "2025-02-03T22:14:13.311065"
     },
     "MAG-7 | SWAG-7 (Field-Tested)": {
-        "lowest_price": "209,11₸",
-        "median_price": "198,38₸",
-        "volume": "169",
-        "timestamp": "2025-02-03T22:14:15.782961"
+        "lowest_price": "295,23₸",
+        "median_price": "266,59₸",
+        "volume": "165",
+        "timestamp": "2025-03-09T23:09:59.902504"
     },
     "MAG-7 | SWAG-7 (Well-Worn)": {
         "lowest_price": "210,80₸",
@@ -31632,10 +31632,10 @@
         "timestamp": "2025-02-03T22:15:15.871080"
     },
     "MAG-7 | Cobalt Core (Factory New)": {
-        "lowest_price": "347,77₸",
-        "median_price": "343,59₸",
-        "volume": "32",
-        "timestamp": "2025-02-03T22:15:18.184557"
+        "lowest_price": "419,30₸",
+        "median_price": "403,48₸",
+        "volume": "26",
+        "timestamp": "2025-03-09T20:05:36.905320"
     },
     "MAG-7 | Cobalt Core (Minimal Wear)": {
         "lowest_price": "239,74₸",
@@ -32730,10 +32730,10 @@
         "timestamp": "2025-02-03T22:24:46.833957"
     },
     "Nova | Polar Mesh (Factory New)": {
-        "lowest_price": "60,07₸",
-        "median_price": "57,11₸",
-        "volume": "49",
-        "timestamp": "2025-03-09T18:50:34.579854"
+        "lowest_price": "59,58₸",
+        "median_price": "63,98₸",
+        "volume": "55",
+        "timestamp": "2025-03-09T20:05:13.795597"
     },
     "Nova | Polar Mesh (Minimal Wear)": {
         "lowest_price": "11,24₸",
@@ -32826,10 +32826,10 @@
         "timestamp": "2025-02-03T22:25:40.610132"
     },
     "Nova | Mandrel (Battle-Scarred)": {
-        "lowest_price": "5,33₸",
-        "median_price": "5,27₸",
-        "volume": "57",
-        "timestamp": "2025-02-03T22:25:42.896219"
+        "lowest_price": "4,72₸",
+        "median_price": "5,30₸",
+        "volume": "284",
+        "timestamp": "2025-03-09T22:50:10.676433"
     },
     "XM1014 | Frost Borre (Factory New)": {
         "lowest_price": "97 209,06₸",
@@ -34356,10 +34356,10 @@
         "timestamp": "2025-02-03T22:38:41.559208"
     },
     "Negev | Bulkhead (Well-Worn)": {
-        "lowest_price": "35,84₸",
-        "median_price": "27,92₸",
-        "volume": "121",
-        "timestamp": "2025-02-03T22:38:43.891564"
+        "lowest_price": "36,70₸",
+        "median_price": "34,21₸",
+        "volume": "134",
+        "timestamp": "2025-03-09T23:10:14.576762"
     },
     "Negev | Army Sheen (Field-Tested)": {
         "lowest_price": "8,06₸",
@@ -34782,10 +34782,10 @@
         "timestamp": "2025-02-03T23:04:06.197346"
     },
     "M249 | O.S.I.P.R. (Battle-Scarred)": {
-        "lowest_price": "97,63₸",
-        "median_price": "87,16₸",
-        "volume": "53",
-        "timestamp": "2025-03-09T19:07:31.753678"
+        "lowest_price": "96,06₸",
+        "median_price": "93,86₸",
+        "volume": "55",
+        "timestamp": "2025-03-09T20:04:28.240500"
     },
     "M249 | Spectrogram (Factory New)": {
         "lowest_price": "203,55₸",
@@ -50916,10 +50916,10 @@
         "timestamp": "2025-02-04T18:21:33.351497"
     },
     "SSG 08 | Abyss (Field-Tested)": {
-        "lowest_price": "173,85₸",
-        "median_price": "167,56₸",
-        "volume": "258",
-        "timestamp": "2025-02-04T18:21:36.019852"
+        "lowest_price": null,
+        "median_price": "206,39₸",
+        "volume": "306",
+        "timestamp": "2025-03-09T23:08:35.955525"
     },
     "SCAR-20 | Green Marine (Well-Worn)": {
         "lowest_price": "139,57₸",
@@ -54150,16 +54150,16 @@
         "timestamp": "2025-03-02T00:58:53.512560"
     },
     "StatTrak™ Glock-18 | Ironwork (Field-Tested)": {
-        "lowest_price": "469,23₸",
-        "median_price": "523,29₸",
+        "lowest_price": null,
+        "median_price": "542,99₸",
         "volume": "67",
-        "timestamp": "2025-03-09T19:07:36.153967"
+        "timestamp": "2025-03-09T20:04:32.720964"
     },
     "StatTrak™ Glock-18 | Ironwork (Well-Worn)": {
-        "lowest_price": null,
-        "median_price": "396,75₸",
+        "lowest_price": "397,38₸",
+        "median_price": "395,58₸",
         "volume": "70",
-        "timestamp": "2025-03-09T19:07:49.535923"
+        "timestamp": "2025-03-09T20:04:46.314966"
     },
     "StatTrak™ Glock-18 | Ironwork (Battle-Scarred)": {
         "lowest_price": "358,87₸",
@@ -54354,16 +54354,16 @@
         "timestamp": "2025-03-02T01:01:30.700249"
     },
     "StatTrak™ Glock-18 | Off World (Field-Tested)": {
-        "lowest_price": "401,30₸",
-        "median_price": "399,58₸",
-        "volume": "139",
-        "timestamp": "2025-03-02T01:01:33.640823"
+        "lowest_price": "368,43₸",
+        "median_price": "406,41₸",
+        "volume": "119",
+        "timestamp": "2025-03-09T23:09:30.041458"
     },
     "StatTrak™ Glock-18 | Off World (Well-Worn)": {
-        "lowest_price": "331,60₸",
-        "median_price": "350,12₸",
-        "volume": "129",
-        "timestamp": "2025-03-09T19:07:27.253976"
+        "lowest_price": "317,41₸",
+        "median_price": "333,81₸",
+        "volume": "134",
+        "timestamp": "2025-03-09T20:04:23.415108"
     },
     "StatTrak™ Glock-18 | Off World (Battle-Scarred)": {
         "lowest_price": "373,07₸",
@@ -55470,10 +55470,10 @@
         "timestamp": "2025-03-02T01:14:58.771423"
     },
     "StatTrak™ Desert Eagle | Calligraffiti (Minimal Wear)": {
-        "lowest_price": "913,57₸",
-        "median_price": "888,10₸",
-        "volume": "183",
-        "timestamp": "2025-03-02T01:15:01.850054"
+        "lowest_price": "853,57₸",
+        "median_price": "834,97₸",
+        "volume": "199",
+        "timestamp": "2025-03-09T23:09:00.110116"
     },
     "StatTrak™ Desert Eagle | Calligraffiti (Field-Tested)": {
         "lowest_price": "458,77₸",
@@ -61182,10 +61182,10 @@
         "timestamp": "2025-03-02T03:16:39.808055"
     },
     "StatTrak™ Tec-9 | Cracked Opal (Field-Tested)": {
-        "lowest_price": "200,88₸",
-        "median_price": "194,09₸",
-        "volume": "52",
-        "timestamp": "2025-03-02T03:16:43.687727"
+        "lowest_price": "208,16₸",
+        "median_price": "205,51₸",
+        "volume": "72",
+        "timestamp": "2025-03-09T20:06:58.302851"
     },
     "StatTrak™ Tec-9 | Cracked Opal (Well-Worn)": {
         "lowest_price": "139,46₸",
@@ -61572,10 +61572,10 @@
         "timestamp": "2025-03-02T03:20:53.981460"
     },
     "StatTrak™ R8 Revolver | Crimson Web (Field-Tested)": {
-        "lowest_price": "350,11₸",
-        "median_price": "349,26₸",
-        "volume": "53",
-        "timestamp": "2025-03-02T03:20:58.223554"
+        "lowest_price": "331,31₸",
+        "median_price": "318,39₸",
+        "volume": "45",
+        "timestamp": "2025-03-09T22:49:45.165920"
     },
     "StatTrak™ R8 Revolver | Crimson Web (Well-Worn)": {
         "lowest_price": "418,16₸",
@@ -66396,10 +66396,10 @@
         "timestamp": "2025-03-02T05:33:45.652600"
     },
     "StatTrak™ MAC-10 | Carnivore (Field-Tested)": {
-        "lowest_price": "191,94₸",
-        "median_price": "192,20₸",
-        "volume": "31",
-        "timestamp": "2025-03-02T05:33:49.447560"
+        "lowest_price": "218,39₸",
+        "median_price": "176,91₸",
+        "volume": "30",
+        "timestamp": "2025-03-09T22:51:09.221436"
     },
     "StatTrak™ MAC-10 | Carnivore (Well-Worn)": {
         "lowest_price": "187,22₸",
@@ -66582,10 +66582,10 @@
         "timestamp": "2025-03-02T05:35:44.529989"
     },
     "StatTrak™ MAC-10 | Ensnared (Well-Worn)": {
-        "lowest_price": "93,35₸",
-        "median_price": "92,12₸",
-        "volume": "131",
-        "timestamp": "2025-03-02T05:35:48.366696"
+        "lowest_price": "96,62₸",
+        "median_price": "95,99₸",
+        "volume": "91",
+        "timestamp": "2025-03-09T20:05:27.535971"
     },
     "StatTrak™ MAC-10 | Ensnared (Battle-Scarred)": {
         "lowest_price": "113₸",
@@ -79596,10 +79596,10 @@
         "timestamp": "2025-03-02T08:52:00.091873"
     },
     "StatTrak™ FAMAS | Meow 36 (Battle-Scarred)": {
-        "lowest_price": "91,12₸",
-        "median_price": "89,70₸",
-        "volume": "124",
-        "timestamp": "2025-03-02T08:52:03.914821"
+        "lowest_price": "82,54₸",
+        "median_price": "82,46₸",
+        "volume": "129",
+        "timestamp": "2025-03-09T23:10:31.402959"
     },
     "StatTrak™ FAMAS | Colony (Factory New)": {
         "lowest_price": null,
@@ -82092,10 +82092,10 @@
         "timestamp": "2025-03-02T09:41:46.270072"
     },
     "StatTrak™ G3SG1 | Ventilator (Field-Tested)": {
-        "lowest_price": "177,74₸",
-        "median_price": "178,26₸",
-        "volume": "48",
-        "timestamp": "2025-03-02T09:41:50.149799"
+        "lowest_price": "116,54₸",
+        "median_price": "109,96₸",
+        "volume": "32",
+        "timestamp": "2025-03-09T22:50:19.235446"
     },
     "StatTrak™ G3SG1 | Ventilator (Well-Worn)": {
         "lowest_price": "225,25₸",
