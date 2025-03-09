@@ -10,7 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException
-
+from selenium_stealth import stealth
+from webdriver_manager.chrome import ChromeDriverManager
 import sys
 import os
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -79,43 +80,115 @@ def steam_login(driver):
     login_url = "https://steamcommunity.com/login/home/"
     driver.get(login_url)
     
-    WebDriverWait(driver, 99999999999).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[7]/div[7]/div[1]/div[1]/div/div/div/div[1]/div[1]/span[1]")))
+    # Ожидаем появления элемента, свидетельствующего об успешном входе (например, имя пользователя)
+    WebDriverWait(driver, 99999999999).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "actual_persona_name"))
+    )
     print("Авторизация в Steam выполнена.")
+def setup_driver(headless=True):
+    options = webdriver.ChromeOptions()
+    if headless:
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1920,1080")
+    else:
+        options.add_argument("--start-maximized")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+    
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    
+    # Применяем настройки stealth для обхода антибот-защиты
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True)
+    return driver
+
+def load_cookies(driver, cookies):
+    """Загружает cookies в драйвер."""
+    driver.get("https://steamcommunity.com/")
+    for cookie in cookies:
+        # Удаляем поле 'expiry', если оно присутствует, чтобы не возникло ошибок
+        if 'expiry' in cookie:
+            cookie.pop('expiry')
+        driver.add_cookie(cookie)
+    driver.refresh()
     
 def buy_skin(driver, url, order_price, weight_number_of_items):
-    wait = WebDriverWait(driver, 10)  # Ожидание до 10 секунд
+    wait = WebDriverWait(driver, 10)
     driver.get(url)
     try:
         btn_place_order = wait.until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "#market_buyorder_info > div.sih_market_buyorder_info__wrapper > div:nth-child(1) > div > div.column.items-end.gap-5 > div.row.gap-10.order-control__row-btn > a.order-control__show-tooltip-btn.order-control__btn.sih_button.sih_pre_shadow_button.h-32.box-shadow-45 > span")
-            ))
+            (By.CSS_SELECTOR, "#market_buyorder_info > div:nth-child(1) > div:nth-child(1) > a > span")
+        ))
         driver.execute_script("arguments[0].scrollIntoView();", btn_place_order)
         ActionChains(driver).move_to_element(btn_place_order).perform()
         btn_place_order.click()
+        
         price_for_skin = wait.until(EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "#sih-order-buy-price")
-            ))
+            (By.ID, "market_buy_commodity_input_price")
+        ))
         driver.execute_script("arguments[0].scrollIntoView();", price_for_skin)
         ActionChains(driver).move_to_element(price_for_skin).perform()
+        price_for_skin.clear()
         price_for_skin.send_keys(order_price)
         time.sleep(0.5)
-        price_for_skin.send_keys(Keys.RETURN)
+        
+        item_quantity = wait.until(EC.presence_of_element_located(
+            (By.ID, "market_buy_commodity_input_quantity")
+        ))
+        item_quantity.clear()
+        item_quantity.send_keys(weight_number_of_items)
         time.sleep(0.5)
-        btn_to_complite =wait.until(EC.element_to_be_clickable(
-                (By.CSS_SELECTOR, "#market_buyorder_info > div.sih_market_buyorder_info__wrapper > div:nth-child(1) > div > div.order-control__tooltip.buy-order-tooltip > div > div.row.items-center.gap-12 > div > a")
-            ))
-        driver.execute_script("arguments[0].scrollIntoView();", btn_to_complite)
-        ActionChains(driver).move_to_element(btn_to_complite).perform()
+        
+        ssa_input = wait.until(EC.presence_of_element_located(
+            (By.ID, "market_buyorder_dialog_accept_ssa")
+        ))
+        ssa_input.click()
+        time.sleep(0.5)
+        
+        btn_to_complite = wait.until(EC.element_to_be_clickable(
+            (By.CSS_SELECTOR, "#market_buyorder_dialog_purchase > span")
+        ))
+        time.sleep(0.5)
         btn_to_complite.click()
+        time.sleep(2.5)
     except TimeoutException:
+        print("Timeout: Элементы не найдены")
         return
     except Exception as e:
+        print("Ошибка:", e)
         driver.quit()
 
-def analyze_orders_weights(price, orders):
-    median_price = price.get("median_price")
-    lowest_price = price.get("lowest_price")
-    volume = price.get("volume")
+def analyze_orders_weights(price, orders, approx_price):
+    median_price_str = price.get("median_price")
+    lowest_price_str = price.get("lowest_price")
+    volume_str = price.get("volume")
+    volume = int(volume_str.replace(",", "").strip())
+    
+    # Инициализация переменных
+    if median_price_str is not None:
+        median_price = float(median_price_str.replace("₸", "").replace(",", ".").replace(" ", "").strip())
+    else:
+        median_price = None
+        
+    if lowest_price_str is not None:
+        lowest_price = float(lowest_price_str.replace("₸", "").replace(",", ".").replace(" ", "").strip())
+    else:
+        lowest_price = None
+
+    # Теперь проверяем значение median_price
+    if median_price is None:
+        median_price = lowest_price
+        
+    if lowest_price is None:
+        lowest_price = median_price
+
     # Извлекаем агрегированные ордера; каждый ордер имеет вид: [price, aggregated_quantity, ...]
     buy_order_graph = orders.get("buy_order_graph", [])
     
@@ -125,15 +198,19 @@ def analyze_orders_weights(price, orders):
     current_price = median_price if median_price is not None else lowest_price
 
     # Пороговые значения
-    threshold_74 = current_price * 0.74
-    threshold_82 = current_price * 0.82
+    if approx_price is not None:
+        threshold_down = approx_price * 0.87
+        threshold_up = approx_price * 0.97
+    else:
+        threshold_down = current_price * 0.74
+        threshold_up = current_price * 0.84
     base_wall_qty_threshold = volume * 0.1
     for i in range(len(buy_order_graph) - 1):
         price_high = buy_order_graph[i][0]
         price_low = buy_order_graph[i+1][0]
-        if price_high > threshold_82 > price_low:
+        if price_high > threshold_up > price_low:
             passive_check_orders = buy_order_graph[i+1][1]
-    if passive_check_orders > volume * 2:
+    if passive_check_orders > volume * 2.5:
         return False, None
     # Вычисляем "эффективное" количество ордеров для каждого уровня:
     # Для каждого уровня effective_qty = aggregated_qty текущего уровня - aggregated_qty следующего уровня
@@ -145,12 +222,12 @@ def analyze_orders_weights(price, orders):
         effective_qty = aggregated_qty - next_aggregated_qty
         effective_orders.append((price_level, effective_qty))
 
-    # Фильтруем ордера, у которых цена находится между threshold_74 и threshold_82
-    filtered_orders = [(p, q) for p, q in effective_orders if threshold_74 < p <= threshold_82]
+    # Фильтруем ордера, у которых цена находится между threshold_down и threshold_up
+    filtered_orders = [(p, q) for p, q in effective_orders if threshold_down < p <= threshold_up]
     # Сортируем по возрастанию цены для последовательного прохода от нижнего порога
     filtered_orders.sort(key=lambda x: x[0])
 
-    candidate_price = round(threshold_74, 2)
+    candidate_price = round(threshold_down, 2)
     print(f"Начинаем с candidate_price = {candidate_price:.2f}")
 
     for price_level, effective_qty in filtered_orders:
@@ -158,7 +235,7 @@ def analyze_orders_weights(price, orders):
             continue
 
         # Вычисляем динамический множитель и пороговое значение
-        multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_74) / (threshold_82 - threshold_74))
+        multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_down) / (threshold_up - threshold_down))
         dynamic_threshold = base_wall_qty_threshold * multiplier
 
         if effective_qty >= dynamic_threshold:
@@ -166,31 +243,37 @@ def analyze_orders_weights(price, orders):
             print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} (порог {dynamic_threshold:.2f}) "
                   f"считается стенкой. Новая candidate_price = {candidate_price:.2f}")
 
-    if candidate_price >= threshold_82:
+    if candidate_price >= threshold_up:
         return False, None
 
     return True, candidate_price
 
 
+
 if __name__ == "__main__":
-    options = webdriver.ChromeOptions()
-    options.add_argument("--start-maximized")
-    
-    service = Service()
-    driver = webdriver.Chrome(service=service, options=options)
+
 
     # Регистрируем обработчик сигнала (Ctrl+C)
     signal.signal(signal.SIGINT, signal_handler)
-    steam_login(driver)
+    
+    # 1. Запуск драйвера в обычном режиме для логина
+    driver_normal = setup_driver(headless=False)
+    steam_login(driver_normal)
+    cookies = driver_normal.get_cookies()
+    driver_normal.quit()  # Закрываем обычный браузер
+    driver_headless = setup_driver(headless=True)
+    load_cookies(driver_headless, cookies)
 
-    with open("/home/pustrace/programming/steam_parser/main/database/logs.json", "r") as file:
+    with open("/home/pustrace/programming/trade/steam/database/logs.json", "r") as file:
         logs = json.load(file)
-    with open("/home/pustrace/programming/steam_parser/main/database/perfect.json", "r") as file:
+    with open("/home/pustrace/programming/trade/steam/database/perfect.json", "r") as file:
         perfect = json.load(file)
     with open ("/home/pustrace/programming/trade/steam/database/item_nameids.json", "r", encoding="utf-8") as f:
         item_nameids = json.load(f)
     with open ("/home/pustrace/programming/trade/steam/database/orders.json", "r") as file:
-        orders = json.load(file)
+        all_orders = json.load(file)
+    with open ("/home/pustrace/programming/trade/steam/database/database.json", "r") as file:
+        database = json.load(file)
     
 
     consecutive_errors = 0
@@ -199,6 +282,9 @@ if __name__ == "__main__":
 
 
     for skin, data in sorted(perfect.items(), key=lambda x: x[1].get("weight_of_items", 0), reverse=True):
+        if skin in logs: 
+            print (f"Orders is exists for {skin}")
+            continue
         # start of passive analyze
         approx_min = data.get("approx_min")
         approx_max = data.get("approx_max")
@@ -218,7 +304,7 @@ if __name__ == "__main__":
         if (approx_max - approx_min) > current_price_pass*0.13:
             approx_price = approx_min
         
-        skin_orders = orders.get(skin, {})
+        skin_orders = all_orders.get(skin, {})
         buy_order_graph = skin_orders.get("buy_order_graph", [])
         for i in range(len(buy_order_graph) - 1):
             price_high = buy_order_graph[i][0]
@@ -233,27 +319,33 @@ if __name__ == "__main__":
                 print(f"Логи для '{skin}' уже существуют")
                 continue
             
-            if skin in orders:
-                date_orders = orders[skin].get("timestamp_orders")
+            if skin in all_orders:
+                date_orders = all_orders[skin].get("timestamp_orders")
                 timestamp_orders = datetime.fromisoformat(date_orders).date()
-            if skin in perfect:
+            if skin in database:
                 date_price = perfect[skin].get("timestamp")    
                 timestamp_price = datetime.fromisoformat(date_price).date()
             
             # Active analyze
-            price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
+            print(f"Получение данных для '{skin}' .")
+            price, skin_orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
             
-            decision, order_price = analyze_orders_weights(price, orders)
+            decision, order_price = analyze_orders_weights(price, skin_orders, approx_price)
             
             # Buy logic
             if decision:
                 url = generate_market_url(skin)
-                buy_skin(driver, url, order_price, weight_number_of_items)
+                weight_number_of_items = round(int(weight_number_of_items), 0)
+                buy_skin(driver_headless, url, order_price, weight_number_of_items)
                 logs[skin] = {"order_price": order_price,
                               "weight_number_of_items": weight_number_of_items,
                               "url": url,
                               "timestamp": datetime.now().isoformat()}
                 save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
+            else:
+                logs[skin] = {"timestamp_skip": datetime.now().isoformat()}
+                save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
         
         
-    print("Выставление ордеров завершенно.")
+    print("Выставление ордеров завершено.")
+    driver_headless.quit()

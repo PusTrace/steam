@@ -1,3 +1,26 @@
 {
-    
+    "Sawed-Off | Black Sand (Field-Tested)": {
+        "order_price": 29.38,
+        "weight_number_of_items": 10,
+        "url": "https://steamcommunity.com/market/listings/730/Sawed-Off%20%7C%20Black%20Sand%20%28Field-Tested%29",
+        "timestamp": "2025-03-09T16:36:17.154574"
+    },
+    "Nova | Polar Mesh (Battle-Scarred)": {
+        "order_price": 5.13,
+        "weight_number_of_items": 7,
+        "url": "https://steamcommunity.com/market/listings/730/Nova%20%7C%20Polar%20Mesh%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-09T18:48:14.208293"
+    },
+    "SSG 08 | Abyss (Battle-Scarred)": {
+        "order_price": 97.67,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/SSG%2008%20%7C%20Abyss%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-09T18:49:25.301944"
+    },
+    "Five-SeveN | Forest Night (Battle-Scarred)": {
+        "order_price": 5.04,
+        "weight_number_of_items": 7,
+        "url": "https://steamcommunity.com/market/listings/730/Five-SeveN%20%7C%20Forest%20Night%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-09T18:50:08.654975"
+    }
 }
