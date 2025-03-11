@@ -1,708 +1,9 @@
 {
-    "SG 553 | Waves Perforated (Field-Tested)": {
-        "approx": [
-            15.38,
-            3.86,
-            11.520000000000001
-        ]
-    },
-    "P250 | Sand Dune (Field-Tested)": {
-        "approx": [
-            15.53,
-            4.4,
-            11.129999999999999
-        ]
-    },
-    "MP5-SD | Dirt Drop (Field-Tested)": {
-        "approx": [
-            7.15,
-            4.0,
-            3.1500000000000004
-        ]
-    },
-    "P250 | Facility Draft (Field-Tested)": {
-        "approx": [
-            10.64,
-            4.02,
-            6.620000000000001
-        ]
-    },
-    "MP9 | Slide (Field-Tested)": {
-        "approx": [
-            9.84,
-            4.77,
-            5.07
-        ]
-    },
-    "Nova | Predator (Field-Tested)": {
-        "approx": [
-            14.97,
-            4.09,
-            10.88
-        ]
-    },
-    "UMP-45 | Facility Dark (Field-Tested)": {
-        "approx": [
-            15.18,
-            4.14,
-            11.04
-        ]
-    },
-    "PP-Bizon | Facility Sketch (Field-Tested)": {
-        "approx": [
-            7.06,
-            4.11,
-            2.9499999999999993
-        ]
-    },
-    "UMP-45 | Mudder (Field-Tested)": {
-        "approx": [
-            6.77,
-            4.34,
-            2.4299999999999997
-        ]
-    },
-    "P250 | Cassette (Field-Tested)": {
-        "approx": [
-            52.2,
-            31.85,
-            20.35
-        ]
-    },
-    "PP-Bizon | Sand Dashed (Field-Tested)": {
-        "approx": [
-            8.34,
-            4.14,
-            4.2
-        ]
-    },
-    "MP9 | Sand Dashed (Field-Tested)": {
-        "approx": [
-            15.58,
-            3.67,
-            11.91
-        ]
-    },
-    "AUG | Sweeper (Factory New)": {
-        "approx": [
-            29.95,
-            17.02,
-            12.93
-        ]
-    },
-    "P250 | Facility Draft (Minimal Wear)": {
-        "approx": [
-            8.69,
-            6.16,
-            2.5299999999999994
-        ]
-    },
-    "AUG | Sweeper (Minimal Wear)": {
-        "approx": [
-            9.26,
-            6.95,
-            2.3099999999999996
-        ]
-    },
-    "UMP-45 | Facility Dark (Minimal Wear)": {
-        "approx": [
-            9.54,
-            6.95,
-            2.589999999999999
-        ]
-    },
-    "MAG-7 | Rust Coat (Battle-Scarred)": {
-        "approx": [
-            15.39,
-            3.58,
-            11.81
-        ]
-    },
-    "SSG 08 | Mainframe 001 (Field-Tested)": {
-        "approx": [
-            46.79,
-            30.14,
-            16.65
-        ]
-    },
-    "MP7 | Forest DDPAT (Minimal Wear)": {
-        "approx": [
-            11.81,
-            5.91,
-            5.9
-        ]
-    },
-    "Galil AR | VariCamo (Factory New)": {
-        "order_price": 100.13,
-        "weight_number_of_items": 26,
-        "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20VariCamo%20%28Factory%20New%29",
-        "timestamp": "2025-03-09T23:07:59.260321"
-    },
-    "MP5-SD | Dirt Drop (Minimal Wear)": {
-        "approx": [
-            12.91,
-            6.86,
-            6.05
-        ]
-    },
-    "G3SG1 | Desert Storm (Minimal Wear)": {
-        "approx": [
-            15.89,
-            4.3,
-            11.59
-        ]
-    },
-    "PP-Bizon | Sand Dashed (Battle-Scarred)": {
-        "approx": [
-            14.97,
-            3.11,
-            11.860000000000001
-        ]
-    },
-    "SSG 08 | Blue Spruce (Battle-Scarred)": {
-        "approx": [
-            15.64,
-            3.64,
-            12.0
-        ]
-    },
-    "SG 553 | Waves Perforated (Battle-Scarred)": {
-        "approx": [
-            15.18,
-            4.06,
-            11.120000000000001
-        ]
-    },
-    "Galil AR | Sage Spray (Battle-Scarred)": {
-        "approx": [
-            15.07,
-            3.5,
-            11.57
-        ]
-    },
-    "MP5-SD | Necro Jr. (Field-Tested)": {
-        "approx": [
-            47.87,
-            29.94,
-            17.929999999999996
-        ]
-    },
-    "P250 | Cassette (Minimal Wear)": {
-        "active_check_orders > volume*2.5": [
-            7489,
-            863
-        ],
-        "timestamp_skip": "2025-03-09T23:08:07.654606"
-    },
-    "Nova | Sand Dune (Minimal Wear)": {
-        "approx": [
-            18.54,
-            3.85,
-            14.69
-        ]
-    },
-    "G3SG1 | Jungle Dashed (Minimal Wear)": {
-        "approx": [
-            16.49,
-            4.3,
-            12.189999999999998
-        ]
-    },
-    "P2000 | Lifted Spirits (Field-Tested)": {
-        "approx": [
-            47.19,
-            27.97,
-            19.22
-        ]
-    },
-    "Nova | Predator (Battle-Scarred)": {
-        "approx": [
-            15.6,
-            2.29,
-            13.309999999999999
-        ]
-    },
-    "Sawed-Off | Spirit Board (Field-Tested)": {
-        "approx": [
-            47.14,
-            30.5,
-            16.64
-        ]
-    },
-    "FAMAS | Colony (Battle-Scarred)": {
-        "approx": [
-            15.41,
-            3.46,
-            11.95
-        ]
-    },
-    "MP7 | Army Recon (Battle-Scarred)": {
-        "approx": [
-            15.6,
-            3.33,
-            12.27
-        ]
-    },
-    "UMP-45 | Mudder (Battle-Scarred)": {
-        "approx": [
-            12.51,
-            3.0,
-            9.51
-        ]
-    },
-    "SCAR-20 | Poultrygeist (Minimal Wear)": {
-        "active_check_orders > volume*2.5": [
-            5479,
-            558
-        ],
-        "timestamp_skip": "2025-03-09T23:08:16.065280"
-    },
-    "Five-SeveN | Scrawl (Well-Worn)": {
-        "approx": [
-            44.92,
-            28.77,
-            16.150000000000002
-        ]
-    },
-    "XM1014 | Hieroglyph (Field-Tested)": {
-        "approx": [
-            25.29,
-            8.51,
-            16.78
-        ]
-    },
-    "MP7 | Forest DDPAT (Battle-Scarred)": {
-        "approx": [
-            14.97,
-            4.13,
-            10.84
-        ]
-    },
-    "XM1014 | Blue Spruce (Battle-Scarred)": {
-        "approx": [
-            15.61,
-            3.32,
-            12.29
-        ]
-    },
-    "Desert Eagle | Bronze Deco (Field-Tested)": {
-        "approx": [
-            100.43,
-            76.52,
-            23.91000000000001
-        ]
-    },
-    "G3SG1 | Desert Storm (Well-Worn)": {
-        "approx": [
-            15.38,
-            3.13,
-            12.25
-        ]
-    },
-    "MP9 | Featherweight (Battle-Scarred)": {
-        "approx": [
-            45.53,
-            22.31,
-            23.220000000000002
-        ]
-    },
-    "SSG 08 | Blue Spruce (Well-Worn)": {
-        "approx": [
-            18.52,
-            4.9,
-            13.62
-        ]
-    },
-    "Sawed-Off | Spirit Board (Well-Worn)": {
-        "approx": [
-            48.86,
-            27.14,
-            21.72
-        ]
-    },
-    "FAMAS | Colony (Well-Worn)": {
-        "approx": [
-            15.6,
-            3.62,
-            11.98
-        ]
-    },
-    "MAG-7 | Insomnia (Battle-Scarred)": {
-        "approx": [
-            46.14,
-            27.94,
-            18.2
-        ]
-    },
-    "PP-Bizon | Sand Dashed (Well-Worn)": {
-        "approx": [
-            15.6,
-            3.02,
-            12.58
-        ]
-    },
-    "MP5-SD | Necro Jr. (Well-Worn)": {
-        "approx": [
-            44.92,
-            28.77,
-            16.150000000000002
-        ]
-    },
-    "P2000 | Gnarled (Battle-Scarred)": {
-        "approx": [
-            42.68,
-            28.77,
-            13.91
-        ]
-    },
-    "Negev | Drop Me (Battle-Scarred)": {
-        "approx": [
-            45.53,
-            25.45,
-            20.080000000000002
-        ]
-    },
-    "SCAR-20 | Contractor (Well-Worn)": {
-        "approx": [
-            15.19,
-            2.52,
-            12.67
-        ]
-    },
-    "Sawed-Off | Forest DDPAT (Well-Worn)": {
-        "approx": [
-            14.3,
-            4.3,
-            10.0
-        ]
-    },
-    "XM1014 | Blue Steel (Battle-Scarred)": {
-        "approx": [
-            42.81,
-            24.94,
-            17.87
-        ]
-    },
-    "SCAR-20 | Sand Mesh (Battle-Scarred)": {
-        "approx": [
-            14.97,
-            2.52,
-            12.450000000000001
-        ]
-    },
-    "MP9 | Sand Dashed (Battle-Scarred)": {
-        "approx": [
-            15.38,
-            3.36,
-            12.020000000000001
-        ]
-    },
-    "MP5-SD | Dirt Drop (Well-Worn)": {
-        "approx": [
-            15.66,
-            3.47,
-            12.19
-        ]
-    },
-    "MP7 | Forest DDPAT (Well-Worn)": {
-        "approx": [
-            14.67,
-            3.55,
-            11.120000000000001
-        ]
-    },
-    "MP9 | Modest Threat (Field-Tested)": {
-        "approx": [
-            69.56,
-            48.87,
-            20.690000000000005
-        ]
-    },
-    "MP7 | Army Recon (Well-Worn)": {
-        "approx": [
-            15.39,
-            2.91,
-            12.48
-        ]
-    },
-    "Tec-9 | Army Mesh (Well-Worn)": {
-        "approx": [
-            2676.41,
-            3.0,
-            2673.41
-        ]
-    },
-    "AUG | Sweeper (Battle-Scarred)": {
-        "approx": [
-            15.19,
-            2.74,
-            12.45
-        ]
-    },
-    "Tec-9 | Urban DDPAT (Well-Worn)": {
-        "approx": [
-            14.9,
-            5.51,
-            9.39
-        ]
-    },
-    "MP5-SD | Necro Jr. (Battle-Scarred)": {
-        "approx": [
-            48.9,
-            26.58,
-            22.32
-        ]
-    },
-    "SCAR-20 | Sand Mesh (Well-Worn)": {
-        "approx": [
-            1577.55,
-            2.27,
-            1575.28
-        ]
-    },
-    "MP9 | Sand Dashed (Well-Worn)": {
-        "approx": [
-            15.19,
-            3.65,
-            11.54
-        ]
-    },
     "Desert Eagle | Corinthian (Minimal Wear)": {
         "order_price": 246.85999999999999,
         "weight_number_of_items": 11,
         "url": "https://steamcommunity.com/market/listings/730/Desert%20Eagle%20%7C%20Corinthian%20%28Minimal%20Wear%29",
         "timestamp": "2025-03-09T23:08:30.905431"
-    },
-    "Five-SeveN | Coolant (Well-Worn)": {
-        "approx": [
-            20.52,
-            3.67,
-            16.85
-        ]
-    },
-    "MP9 | Orange Peel (Battle-Scarred)": {
-        "approx": [
-            46.87,
-            27.11,
-            19.759999999999998
-        ]
-    },
-    "MAC-10 | Ensnared (Battle-Scarred)": {
-        "approx": [
-            48.33,
-            28.49,
-            19.84
-        ]
-    },
-    "UMP-45 | Gunsmoke (Battle-Scarred)": {
-        "approx": [
-            41.56,
-            22.45,
-            19.110000000000003
-        ]
-    },
-    "M249 | Gator Mesh (Factory New)": {
-        "approx": [
-            107.42,
-            56.61,
-            50.81
-        ]
-    },
-    "P250 | Facility Draft (Well-Worn)": {
-        "approx": [
-            15.64,
-            3.31,
-            12.33
-        ]
-    },
-    "MAC-10 | Palm (Battle-Scarred)": {
-        "approx": [
-            42.75,
-            19.54,
-            23.21
-        ]
-    },
-    "SG 553 | Aloha (Well-Worn)": {
-        "approx": [
-            54.15,
-            34.91,
-            19.240000000000002
-        ]
-    },
-    "SSG 08 | Abyss (Field-Tested)": {
-        "active_check_orders > volume*2.5": [
-            1411,
-            306
-        ],
-        "timestamp_skip": "2025-03-09T23:08:39.560354"
-    },
-    "PP-Bizon | Facility Sketch (Well-Worn)": {
-        "approx": [
-            20.24,
-            3.17,
-            17.07
-        ]
-    },
-    "P250 | Valence (Field-Tested)": {
-        "active_check_orders > volume*2.5": [
-            1756,
-            313
-        ],
-        "timestamp_skip": "2025-03-09T23:08:48.853967"
-    },
-    "Glock-18 | Sacrifice (Field-Tested)": {
-        "approx": [
-            187.22,
-            140.78,
-            46.44
-        ]
-    },
-    "XM1014 | Oxide Blaze (Field-Tested)": {
-        "approx": [
-            50.59,
-            27.2,
-            23.390000000000004
-        ]
-    },
-    "FAMAS | Cyanospatter (Well-Worn)": {
-        "approx": [
-            43.83,
-            25.21,
-            18.619999999999997
-        ]
-    },
-    "StatTrak™ P90 | Freight (Field-Tested)": {
-        "approx": [
-            87.22,
-            69.21,
-            18.010000000000005
-        ]
-    },
-    "MP7 | Sunbaked (Field-Tested)": {
-        "approx": [
-            23.61,
-            7.27,
-            16.34
-        ]
-    },
-    "AUG | Triqua (Field-Tested)": {
-        "approx": [
-            86.03,
-            43.43,
-            42.6
-        ]
-    },
-    "Sawed-Off | Origami (Field-Tested)": {
-        "approx": [
-            98.17,
-            76.79,
-            21.379999999999995
-        ]
-    },
-    "Sawed-Off | Snake Camo (Battle-Scarred)": {
-        "approx": [
-            40.2,
-            20.64,
-            19.560000000000002
-        ]
-    },
-    "Sawed-Off | Black Sand (Field-Tested)": {
-        "approx": [
-            70.04,
-            31.93,
-            38.11000000000001
-        ]
-    },
-    "P250 | Cassette (Battle-Scarred)": {
-        "approx": [
-            47.42,
-            22.04,
-            25.380000000000003
-        ]
-    },
-    "Galil AR | Destroyer (Battle-Scarred)": {
-        "approx": [
-            45.64,
-            23.82,
-            21.82
-        ]
-    },
-    "USP-S | Desert Tactical (Well-Worn)": {
-        "approx": [
-            111.6,
-            86.88,
-            24.72
-        ]
-    },
-    "StatTrak™ PP-Bizon | Runic (Field-Tested)": {
-        "approx": [
-            86.32,
-            61.35,
-            24.96999999999999
-        ]
-    },
-    "Glock-18 | Oxide Blaze (Minimal Wear)": {
-        "approx": [
-            120.67,
-            88.73,
-            31.939999999999998
-        ]
-    },
-    "XM1014 | Slipstream (Field-Tested)": {
-        "approx": [
-            87.15,
-            64.63,
-            22.52000000000001
-        ]
-    },
-    "StatTrak™ UMP-45 | Roadblock (Battle-Scarred)": {
-        "approx": [
-            83.44,
-            57.83,
-            25.61
-        ]
-    },
-    "MP7 | Sunbaked (Battle-Scarred)": {
-        "approx": [
-            25.63,
-            8.86,
-            16.77
-        ]
-    },
-    "Negev | Prototype (Field-Tested)": {
-        "approx": [
-            67.7,
-            39.47,
-            28.230000000000004
-        ]
-    },
-    "Tec-9 | VariCamo (Battle-Scarred)": {
-        "approx": [
-            44.92,
-            22.49,
-            22.430000000000003
-        ]
-    },
-    "Five-SeveN | Coolant (Battle-Scarred)": {
-        "approx": [
-            150.14,
-            4.22,
-            145.92
-        ]
-    },
-    "M4A4 | Mainframe (Well-Worn)": {
-        "approx": [
-            46.79,
-            24.3,
-            22.49
-        ]
-    },
-    "P90 | Grim (Minimal Wear)": {
-        "approx": [
-            157.78,
-            92.96,
-            64.82000000000001
-        ]
     },
     "MP9 | Bioleak (Factory New)": {
         "order_price": 276.89,
@@ -710,130 +11,11 @@
         "url": "https://steamcommunity.com/market/listings/730/MP9%20%7C%20Bioleak%20%28Factory%20New%29",
         "timestamp": "2025-03-09T23:08:55.149920"
     },
-    "Tec-9 | Flash Out (Field-Tested)": {
-        "approx": [
-            141.24,
-            81.81,
-            59.43000000000001
-        ]
-    },
-    "R8 Revolver | Banana Cannon (Battle-Scarred)": {
-        "approx": [
-            212.52,
-            141.18,
-            71.34
-        ]
-    },
-    "G3SG1 | Hunter (Field-Tested)": {
-        "approx": [
-            83.27,
-            34.64,
-            48.629999999999995
-        ]
-    },
-    "MP7 | Cirrus (Minimal Wear)": {
-        "approx": [
-            198.77,
-            156.1,
-            42.670000000000016
-        ]
-    },
-    "R8 Revolver | Grip (Field-Tested)": {
-        "approx": [
-            60.64,
-            30.55,
-            30.09
-        ]
-    },
-    "P250 | Cassette (Well-Worn)": {
-        "approx": [
-            51.12,
-            29.08,
-            22.04
-        ]
-    },
-    "MP7 | Mischief (Battle-Scarred)": {
-        "approx": [
-            95.07,
-            63.93,
-            31.139999999999993
-        ]
-    },
-    "P2000 | Urban Hazard (Well-Worn)": {
-        "approx": [
-            47.23,
-            19.18,
-            28.049999999999997
-        ]
-    },
-    "Galil AR | VariCamo (Battle-Scarred)": {
-        "approx": [
-            46.48,
-            20.95,
-            25.529999999999998
-        ]
-    },
-    "PP-Bizon | Facility Sketch (Battle-Scarred)": {
-        "approx": [
-            16.72,
-            3.19,
-            13.53
-        ]
-    },
-    "G3SG1 | Orange Crash (Field-Tested)": {
-        "approx": [
-            92.84,
-            44.24,
-            48.6
-        ]
-    },
-    "R8 Revolver | Grip (Well-Worn)": {
-        "approx": [
-            50.59,
-            23.21,
-            27.380000000000003
-        ]
-    },
-    "G3SG1 | Polar Camo (Factory New)": {
-        "approx": [
-            87.18,
-            47.48,
-            39.70000000000001
-        ]
-    },
-    "R8 Revolver | Bone Forged (Field-Tested)": {
-        "approx": [
-            68.97,
-            34.54,
-            34.43
-        ]
-    },
     "StatTrak™ Desert Eagle | Calligraffiti (Minimal Wear)": {
         "order_price": 700.72,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20Desert%20Eagle%20%7C%20Calligraffiti%20%28Minimal%20Wear%29",
         "timestamp": "2025-03-09T23:09:10.131108"
-    },
-    "Tec-9 | Ice Cap (Field-Tested)": {
-        "approx": [
-            158.61,
-            114.91,
-            43.70000000000002
-        ]
-    },
-    "XM1014 | Ziggy (Field-Tested)": {
-        "approx": [
-            359.0,
-            261.19,
-            97.81
-        ]
-    },
-    "G3SG1 | Ventilator (Field-Tested)": {
-        "approx": [
-            90.6,
-            45.38,
-            45.21999999999999
-        ]
     },
     "AWP | Acheron (Well-Worn)": {
         "order_price": 676.73,
@@ -841,203 +23,360 @@
         "url": "https://steamcommunity.com/market/listings/730/AWP%20%7C%20Acheron%20%28Well-Worn%29",
         "timestamp": "2025-03-09T23:09:24.850859"
     },
-    "StatTrak™ R8 Revolver | Grip (Well-Worn)": {
-        "approx": [
-            112.76,
-            77.89,
-            34.870000000000005
-        ]
-    },
-    "MP9 | Modest Threat (Battle-Scarred)": {
-        "approx": [
-            57.82,
-            27.07,
-            30.75
-        ]
-    },
-    "StatTrak™ Glock-18 | Off World (Field-Tested)": {
-        "order_price": 339.28999999999996,
-        "weight_number_of_items": 5,
-        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20Glock-18%20%7C%20Off%20World%20%28Field-Tested%29",
-        "timestamp": "2025-03-09T23:09:40.136870"
-    },
-    "MP7 | Akoben (Field-Tested)": {
-        "approx": [
-            173.7,
-            94.94,
-            78.75999999999999
-        ]
-    },
-    "Five-SeveN | Flame Test (Battle-Scarred)": {
-        "approx": [
-            187.21,
-            33.07,
-            154.14000000000001
-        ]
-    },
-    "AUG | Triqua (Minimal Wear)": {
-        "approx": [
-            113.94,
-            83.58,
-            30.36
-        ]
-    },
-    "MAC-10 | Whitefish (Field-Tested)": {
-        "order_price": 119.11,
-        "weight_number_of_items": 6,
-        "url": "https://steamcommunity.com/market/listings/730/MAC-10%20%7C%20Whitefish%20%28Field-Tested%29",
-        "timestamp": "2025-03-09T23:09:55.101601"
-    },
-    "MAG-7 | SWAG-7 (Field-Tested)": {
-        "order_price": 220.39,
-        "weight_number_of_items": 5,
-        "url": "https://steamcommunity.com/market/listings/730/MAG-7%20%7C%20SWAG-7%20%28Field-Tested%29",
-        "timestamp": "2025-03-09T23:10:09.546859"
-    },
-    "Negev | Bulkhead (Well-Worn)": {
-        "active_check_orders > volume*2.5": [
-            1596,
-            134
-        ],
-        "timestamp_skip": "2025-03-09T23:10:18.180473"
-    },
-    "SCAR-20 | Poultrygeist (Battle-Scarred)": {
-        "approx": [
-            49.08,
-            28.85,
-            20.229999999999997
-        ]
-    },
-    "SCAR-20 | Contractor (Battle-Scarred)": {
-        "approx": [
-            15.18,
-            2.75,
-            12.43
-        ]
-    },
-    "SCAR-20 | Assault (Field-Tested)": {
-        "approx": [
-            120.34,
-            74.41,
-            45.93000000000001
-        ]
-    },
-    "MAC-10 | Carnivore (Minimal Wear)": {
-        "approx": [
-            145.24,
-            110.91,
-            34.33000000000001
-        ]
-    },
-    "Glock-18 | Death Rattle (Battle-Scarred)": {
-        "approx": [
-            55.65,
-            30.03,
-            25.619999999999997
-        ]
-    },
-    "MAC-10 | Classic Crate (Field-Tested)": {
-        "active_check_orders > volume*2.5": [
-            1040,
-            54
-        ],
-        "timestamp_skip": "2025-03-09T23:10:26.613913"
-    },
-    "Galil AR | Black Sand (Battle-Scarred)": {
-        "approx": [
-            136.54,
-            78.77,
-            57.769999999999996
-        ]
-    },
     "StatTrak™ FAMAS | Meow 36 (Battle-Scarred)": {
         "order_price": 64.37,
         "weight_number_of_items": 6,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20FAMAS%20%7C%20Meow%2036%20%28Battle-Scarred%29",
         "timestamp": "2025-03-09T23:10:41.399665"
     },
-    "StatTrak™ Galil AR | Destroyer (Minimal Wear)": {
-        "approx": [
-            273.35,
-            211.97,
-            61.380000000000024
-        ]
+    "Galil AR | VariCamo (Factory New)": {
+        "order_price": 116.36,
+        "weight_number_of_items": 26,
+        "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20VariCamo%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T16:58:16.756202"
     },
-    "R8 Revolver | Inlay (Factory New)": {
-        "approx": [
-            89.83,
-            66.48,
-            23.349999999999994
-        ]
+    "XM1014 | Hieroglyph (Field-Tested)": {
+        "order_price": 7.4,
+        "approx_diffrence": 16.78,
+        "weight_number_of_items": 17,
+        "url": "https://steamcommunity.com/market/listings/730/XM1014%20%7C%20Hieroglyph%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:01:16.911446"
     },
-    "XM1014 | Oxide Blaze (Minimal Wear)": {
-        "approx": [
-            90.91,
-            61.28,
-            29.629999999999995
-        ]
+    "MP7 | Sunbaked (Field-Tested)": {
+        "order_price": 6.32,
+        "approx_diffrence": 16.34,
+        "weight_number_of_items": 10,
+        "url": "https://steamcommunity.com/market/listings/730/MP7%20%7C%20Sunbaked%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:08:15.364819"
     },
-    "P90 | Neoqueen (Well-Worn)": {
-        "approx": [
-            249.16,
-            196.25,
-            52.91
-        ]
+    "AUG | Triqua (Field-Tested)": {
+        "order_price": 37.78,
+        "approx_diffrence": 42.6,
+        "weight_number_of_items": 10,
+        "url": "https://steamcommunity.com/market/listings/730/AUG%20%7C%20Triqua%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:08:32.257040"
     },
-    "SCAR-20 | Trail Blazer (Battle-Scarred)": {
-        "approx": [
-            77.46,
-            53.38,
-            24.07999999999999
-        ]
+    "Sawed-Off | Black Sand (Field-Tested)": {
+        "order_price": 27.78,
+        "approx_diffrence": 38.11000000000001,
+        "weight_number_of_items": 10,
+        "url": "https://steamcommunity.com/market/listings/730/Sawed-Off%20%7C%20Black%20Sand%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:09:06.528548"
     },
-    "StatTrak™ XM1014 | Oxide Blaze (Minimal Wear)": {
-        "approx": [
-            4620.17,
-            220.44,
-            4399.7300000000005
-        ]
+    "G3SG1 | Hunter (Field-Tested)": {
+        "order_price": 30.14,
+        "approx_diffrence": 48.629999999999995,
+        "weight_number_of_items": 8,
+        "url": "https://steamcommunity.com/market/listings/730/G3SG1%20%7C%20Hunter%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:11:39.422462"
     },
-    "Glock-18 | Ironwork (Battle-Scarred)": {
-        "approx": [
-            140.44,
-            98.12,
-            42.31999999999999
-        ]
+    "P2000 | Urban Hazard (Well-Worn)": {
+        "order_price": 16.69,
+        "approx_diffrence": 28.049999999999997,
+        "weight_number_of_items": 8,
+        "url": "https://steamcommunity.com/market/listings/730/P2000%20%7C%20Urban%20Hazard%20%28Well-Worn%29",
+        "timestamp": "2025-03-11T17:12:32.895278"
     },
-    "Negev | Desert-Strike (Field-Tested)": {
-        "approx": [
-            79.03,
-            53.36,
-            25.67
-        ]
+    "Galil AR | VariCamo (Battle-Scarred)": {
+        "order_price": 18.23,
+        "approx_diffrence": 25.529999999999998,
+        "weight_number_of_items": 8,
+        "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20VariCamo%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T17:12:50.055556"
+    },
+    "G3SG1 | Orange Crash (Field-Tested)": {
+        "order_price": 38.49,
+        "approx_diffrence": 48.6,
+        "weight_number_of_items": 7,
+        "url": "https://steamcommunity.com/market/listings/730/G3SG1%20%7C%20Orange%20Crash%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:13:16.432421"
+    },
+    "MP7 | Akoben (Field-Tested)": {
+        "order_price": 82.6,
+        "approx_diffrence": 78.75999999999999,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/MP7%20%7C%20Akoben%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:14:59.219287"
     },
     "MAC-10 | Whitefish (Battle-Scarred)": {
-        "approx": [
-            96.17,
-            58.17,
-            38.0
-        ]
+        "order_price": 50.61,
+        "approx_diffrence": 38.0,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/MAC-10%20%7C%20Whitefish%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T17:18:21.723325"
     },
-    "Five-SeveN | Capillary (Field-Tested)": {
-        "approx": [
-            263.16,
-            127.53,
-            135.63000000000002
-        ]
+    "StatTrak™ SG 553 | Aloha (Field-Tested)": {
+        "order_price": 83.07000000000001,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20SG%20553%20%7C%20Aloha%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:19:52.215147"
     },
-    "MAG-7 | Foresight (Well-Worn)": {
-        "approx": [
-            50.85,
-            17.21,
-            33.64
-        ]
+    "Sawed-Off | Black Sand (Well-Worn)": {
+        "order_price": 16.84,
+        "approx_diffrence": 33.57,
+        "weight_number_of_items": 7,
+        "url": "https://steamcommunity.com/market/listings/730/Sawed-Off%20%7C%20Black%20Sand%20%28Well-Worn%29",
+        "timestamp": "2025-03-11T17:21:50.498637"
     },
-    "Dual Berettas | Dualing Dragons (Well-Worn)": {
-        "approx": [
-            149.23,
-            112.46,
-            36.769999999999996
-        ]
+    "SSG 08 | Abyss (Battle-Scarred)": {
+        "order_price": 95.19000000000001,
+        "approx_diffrence": 25.189999999999998,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/SSG%2008%20%7C%20Abyss%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T17:24:16.229139"
+    },
+    "P90 | Elite Build (Field-Tested)": {
+        "order_price": 149.14,
+        "approx_diffrence": 510.49999999999994,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/P90%20%7C%20Elite%20Build%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:25:55.184179"
+    },
+    "StatTrak™ G3SG1 | Ventilator (Field-Tested)": {
+        "order_price": 115.68,
+        "approx_diffrence": 122.47,
+        "weight_number_of_items": 6,
+        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20G3SG1%20%7C%20Ventilator%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T17:28:29.565181"
+    },
+    "SG 553 | Danger Close (Battle-Scarred)": {
+        "order_price": 21.16,
+        "approx_diffrence": 26.799999999999997,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/SG%20553%20%7C%20Danger%20Close%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T17:32:04.472518"
+    },
+    "MP9 | Modest Threat (Well-Worn)": {
+        "order_price": 73.81,
+        "approx_diffrence": 39.33,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/MP9%20%7C%20Modest%20Threat%20%28Well-Worn%29",
+        "timestamp": "2025-03-11T17:34:30.434894"
+    },
+    "P250 | Franklin (Factory New)": {
+        "order_price": 628.87,
+        "approx_diffrence": 494.06000000000006,
+        "weight_number_of_items": 4,
+        "url": "https://steamcommunity.com/market/listings/730/P250%20%7C%20Franklin%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T18:15:27.796959"
+    },
+    "AWP | Safari Mesh (Factory New)": {
+        "order_price": 700.72,
+        "approx_diffrence": 258.77,
+        "weight_number_of_items": 4,
+        "url": "https://steamcommunity.com/market/listings/730/AWP%20%7C%20Safari%20Mesh%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T18:20:13.896173"
+    },
+    "MAC-10 | Palm (Well-Worn)": {
+        "order_price": 15.87,
+        "approx_diffrence": 22.27,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/MAC-10%20%7C%20Palm%20%28Well-Worn%29",
+        "timestamp": "2025-03-11T18:23:35.754994"
+    },
+    "StatTrak™ P2000 | Oceanic (Field-Tested)": {
+        "order_price": 134.51,
+        "approx_diffrence": 57.56,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20P2000%20%7C%20Oceanic%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:23:51.468062"
+    },
+    "StatTrak™ SSG 08 | Mainframe 001 (Factory New)": {
+        "order_price": 866.61,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20SSG%2008%20%7C%20Mainframe%20001%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T18:28:51.071431"
+    },
+    "Dual Berettas | Contractor (Well-Worn)": {
+        "order_price": 5.36,
+        "approx_diffrence": 14.36,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Dual%20Berettas%20%7C%20Contractor%20%28Well-Worn%29",
+        "timestamp": "2025-03-11T18:30:57.951347"
+    },
+    "FAMAS | Colony (Minimal Wear)": {
+        "order_price": 4.72,
+        "approx_diffrence": 8.55,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/FAMAS%20%7C%20Colony%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T18:31:13.675542"
+    },
+    "SSG 08 | Blue Spruce (Minimal Wear)": {
+        "order_price": 5.33,
+        "approx_diffrence": 14.170000000000002,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/SSG%2008%20%7C%20Blue%20Spruce%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T18:31:29.592209"
+    },
+    "G3SG1 | Desert Storm (Field-Tested)": {
+        "order_price": 4.01,
+        "approx_diffrence": 6.72,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/G3SG1%20%7C%20Desert%20Storm%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:32:13.113666"
+    },
+    "AUG | Snake Pit (Battle-Scarred)": {
+        "order_price": 4.13,
+        "approx_diffrence": 2678.43,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/AUG%20%7C%20Snake%20Pit%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T18:33:27.447394"
+    },
+    "XM1014 | Blue Spruce (Minimal Wear)": {
+        "order_price": 5.1,
+        "approx_diffrence": 7.890000000000001,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/XM1014%20%7C%20Blue%20Spruce%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T18:33:53.344838"
+    },
+    "G3SG1 | VariCamo (Factory New)": {
+        "order_price": 36.44,
+        "approx_diffrence": 40.15,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/G3SG1%20%7C%20VariCamo%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T18:35:06.104730"
+    },
+    "Tec-9 | Army Mesh (Field-Tested)": {
+        "order_price": 4.05,
+        "approx_diffrence": 5.159999999999999,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Tec-9%20%7C%20Army%20Mesh%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:35:31.242833"
+    },
+    "MP7 | Army Recon (Field-Tested)": {
+        "order_price": 4.2299999999999995,
+        "approx_diffrence": 10.61,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/MP7%20%7C%20Army%20Recon%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:36:05.740985"
+    },
+    "Galil AR | Sage Spray (Field-Tested)": {
+        "order_price": 4.3,
+        "approx_diffrence": 8.02,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20Sage%20Spray%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:36:40.119710"
+    },
+    "P2000 | Oceanic (Field-Tested)": {
+        "order_price": 77.12,
+        "approx_diffrence": 91.29999999999998,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/P2000%20%7C%20Oceanic%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:39:55.188889"
+    },
+    "StatTrak™ Glock-18 | Wraiths (Field-Tested)": {
+        "order_price": 523.53,
+        "approx_diffrence": 130.16999999999996,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20Glock-18%20%7C%20Wraiths%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T18:41:52.861129"
+    },
+    "Five-SeveN | Orange Peel (Battle-Scarred)": {
+        "order_price": 13.48,
+        "approx_diffrence": 28.309999999999995,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Five-SeveN%20%7C%20Orange%20Peel%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T18:42:18.074802"
+    },
+    "Five-SeveN | Midnight Paintover (Battle-Scarred)": {
+        "order_price": 56.5,
+        "approx_diffrence": 202.60999999999999,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Five-SeveN%20%7C%20Midnight%20Paintover%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T18:45:23.082762"
+    },
+    "AUG | Condemned (Battle-Scarred)": {
+        "order_price": 18.02,
+        "approx_diffrence": 21.68,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/AUG%20%7C%20Condemned%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T18:49:21.803034"
+    },
+    "StatTrak™ R8 Revolver | Junk Yard (Minimal Wear)": {
+        "order_price": 530.1899999999999,
+        "approx_diffrence": 354.69999999999993,
+        "weight_number_of_items": 4,
+        "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20R8%20Revolver%20%7C%20Junk%20Yard%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T18:51:57.127007"
+    },
+    "Tec-9 | Red Quartz (Minimal Wear)": {
+        "order_price": 54.54,
+        "approx_diffrence": 15.869999999999997,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Tec-9%20%7C%20Red%20Quartz%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T18:59:26.916432"
+    },
+    "M4A1-S | Nitro (Well-Worn)": {
+        "order_price": 336.21,
+        "approx_diffrence": 122.20000000000005,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/M4A1-S%20%7C%20Nitro%20%28Well-Worn%29",
+        "timestamp": "2025-03-11T19:01:23.611215"
+    },
+    "Galil AR | VariCamo (Field-Tested)": {
+        "order_price": 44.86,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20VariCamo%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T19:04:15.853367"
+    },
+    "M249 | Gator Mesh (Field-Tested)": {
+        "order_price": 44.86,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/M249%20%7C%20Gator%20Mesh%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T19:05:45.097587"
+    },
+    "UMP-45 | Labyrinth (Factory New)": {
+        "order_price": 113.13,
+        "approx_diffrence": 54.32000000000002,
+        "weight_number_of_items": 4,
+        "url": "https://steamcommunity.com/market/listings/730/UMP-45%20%7C%20Labyrinth%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T19:10:50.114641"
+    },
+    "MP7 | Urban Hazard (Field-Tested)": {
+        "order_price": 40.2,
+        "approx_diffrence": 136.51999999999998,
+        "weight_number_of_items": 5,
+        "url": "https://steamcommunity.com/market/listings/730/MP7%20%7C%20Urban%20Hazard%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T20:28:35.088337"
+    },
+    "P250 | Vino Primo (Battle-Scarred)": {
+        "order_price": 245.48,
+        "approx_diffrence": 389.50999999999993,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/P250%20%7C%20Vino%20Primo%20%28Battle-Scarred%29",
+        "timestamp": "2025-03-11T20:30:51.780726"
+    },
+    "MAC-10 | Rangeen (Minimal Wear)": {
+        "order_price": 256.35,
+        "approx_diffrence": 209.91999999999996,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/MAC-10%20%7C%20Rangeen%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T20:31:44.766886"
+    },
+    "Glock-18 | Wraiths (Minimal Wear)": {
+        "order_price": 316.45,
+        "approx_diffrence": 138.02999999999997,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/Glock-18%20%7C%20Wraiths%20%28Minimal%20Wear%29",
+        "timestamp": "2025-03-11T20:34:10.521443"
+    },
+    "Negev | Terrain (Field-Tested)": {
+        "order_price": 189.03,
+        "approx_diffrence": 188.92999999999998,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/Negev%20%7C%20Terrain%20%28Field-Tested%29",
+        "timestamp": "2025-03-11T20:34:35.383517"
+    },
+    "MAG-7 | Heaven Guard (Factory New)": {
+        "order_price": 248.48,
+        "weight_number_of_items": 3,
+        "url": "https://steamcommunity.com/market/listings/730/MAG-7%20%7C%20Heaven%20Guard%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T20:36:42.162424"
+    },
+    "USP-S | Check Engine (Factory New)": {
+        "order_price": 757.71,
+        "weight_number_of_items": 2,
+        "url": "https://steamcommunity.com/market/listings/730/USP-S%20%7C%20Check%20Engine%20%28Factory%20New%29",
+        "timestamp": "2025-03-11T20:37:34.853665"
     }
 }

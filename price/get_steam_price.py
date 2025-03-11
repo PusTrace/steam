@@ -15,7 +15,7 @@ STEAM_API_URL = "https://steamcommunity.com/market/priceoverview/"
 
 MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
 
-def get_steam_price(market_hash_name):
+def get_steam_price(market_hash_name, proxies):
     params = {
         "appid": "730",
         "currency": 37,
@@ -28,7 +28,7 @@ def get_steam_price(market_hash_name):
     }
     
     try:
-        response = requests.get(STEAM_API_URL, params=params, headers=headers)
+        response = requests.get(STEAM_API_URL, params=params, headers=headers, proxies=proxies)
         response.raise_for_status()
         
         data = response.json()

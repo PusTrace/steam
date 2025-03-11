@@ -17,7 +17,7 @@ STEAM_API_URL = "https://steamcommunity.com/market/itemordershistogram"
 MAX_RETRIES = 6  # Максимальное количество подряд идущих ошибок 429
 
 
-def get_orders(skin_id):
+def get_orders(skin_id, proxies):
     params = {
         "country": "KZ",
         "language": "english",
@@ -33,7 +33,7 @@ def get_orders(skin_id):
     }
     
     try:
-        response = requests.get(STEAM_API_URL, params=params, headers=headers)
+        response = requests.get(STEAM_API_URL, params=params, headers=headers, proxies=proxies)
         response.raise_for_status()
         
         data = response.json()

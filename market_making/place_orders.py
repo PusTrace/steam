@@ -20,8 +20,9 @@ if parent_dir not in sys.path:
 from utils.utils import save_data, signal_handler, generate_market_url
 from orders.get_order_info import get_orders
 from price.get_steam_price import get_steam_price
+from utils.tornet import change_ip
 
-def get_market_data(skin, skin_id, timestamp_orders, timestamp_price):
+def get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies):
     today = date.today()  # Пример формата 'YYYY-MM-DD'
     
     # Проверяем, если ордеры уже получены сегодня, читаем их из файла
@@ -44,7 +45,7 @@ def get_market_data(skin, skin_id, timestamp_orders, timestamp_price):
     while errors < 6:
         # Если данные ордеров отсутствуют, запрашиваем их
         if not item_orders:
-            item_orders = get_orders(skin_id)
+            item_orders = get_orders(skin_id, proxies)
             if item_orders:
                 # Обновляем JSON-файл с ордерами
                 save_data({skin: item_orders}, "/home/pustrace/programming/trade/steam/database/orders.json")
@@ -52,14 +53,14 @@ def get_market_data(skin, skin_id, timestamp_orders, timestamp_price):
                 time.sleep(3.5)
             else:
                 errors += 1
-                if errors >= 6:
-                    print("Превышено количество ошибок 429 подряд. Остановка на час.")
-                    time.sleep(60*60)
-                time.sleep(40)
+                if errors >= 2:
+                    print("Превышено количество ошибок меняем айпи.")
+                    change_ip()
+                time.sleep(10)
         
         # Если данные цены отсутствуют, запрашиваем их
         if not item_price:
-            item_price = get_steam_price(skin)
+            item_price = get_steam_price(skin, proxies)
             if item_price:
                 # Обновляем JSON-файл с ценами
                 save_data({skin: item_price}, "/home/pustrace/programming/trade/steam/database/database.json")
@@ -67,10 +68,10 @@ def get_market_data(skin, skin_id, timestamp_orders, timestamp_price):
                 time.sleep(3.5)
             else:
                 errors += 1
-                if errors >= 6:
-                    print("Превышено количество ошибок 429 подряд. Остановка на час.")
-                    time.sleep(60*60)
-                time.sleep(40)
+                if errors >= 2:
+                    print("Превышено количество ошибок Смена айпи.")
+                    change_ip()
+                time.sleep(10)
         
         if item_price and item_orders:
             return item_price, item_orders
@@ -170,6 +171,7 @@ def analyze_orders_weights(price, orders, approx_price):
     lowest_price_str = price.get("lowest_price")
     volume_str = price.get("volume")
     volume = int(volume_str.replace(",", "").strip())
+    approx_true = False
     
     # Обработка цен
     if median_price_str is not None:
@@ -195,8 +197,9 @@ def analyze_orders_weights(price, orders, approx_price):
 
     # Установка пороговых значений
     if approx_price is not None:
-        threshold_down = approx_price * 0.87
-        threshold_up = approx_price * 0.97
+        threshold_down = approx_price * 0.83
+        threshold_up = approx_price * 0.94
+        approx_true = True
     else:
         threshold_down = current_price * 0.74
         threshold_up = current_price * 0.84
@@ -208,54 +211,55 @@ def analyze_orders_weights(price, orders, approx_price):
         price_low = buy_order_graph[i+1][0]
         if price_high > threshold_up > price_low:
             active_check_orders = buy_order_graph[i+1][1]
-    if active_check_orders > volume * 2.5:
-        logs[skin] = {"active_check_orders > volume*2.5": [active_check_orders, volume],
-                      "timestamp_skip": datetime.now().isoformat()}
-        return False, None
+    if active_check_orders > volume * 1.2:
+        return False, None, False
+    else:
+        effective_orders = []
+        for i, order in enumerate(buy_order_graph):
+            price_level = order[0]
+            aggregated_qty = order[1]
+            if i == 0:
+                effective_qty = aggregated_qty
+            else:
+                effective_qty = aggregated_qty - buy_order_graph[i-1][1]
+            effective_orders.append((price_level, effective_qty))
 
-    # Корректный расчёт "эффективного" количества ордеров
-    effective_orders = []
-    for i, order in enumerate(buy_order_graph):
-        price_level = order[0]
-        aggregated_qty = order[1]
-        if i == 0:
-            effective_qty = aggregated_qty
-        else:
-            effective_qty = aggregated_qty - buy_order_graph[i-1][1]
-        effective_orders.append((price_level, effective_qty))
+        # Фильтруем ордера по порогам
+        filtered_orders = [(p, q) for p, q in effective_orders if threshold_down < p <= threshold_up]
+        filtered_orders.sort(key=lambda x: x[0])
 
-    # Фильтруем ордера по порогам
-    filtered_orders = [(p, q) for p, q in effective_orders if threshold_down < p <= threshold_up]
-    filtered_orders.sort(key=lambda x: x[0])
+        candidate_price = round(threshold_down, 2)
+        print(f"Начинаем с candidate_price = {candidate_price:.2f}")
 
-    candidate_price = round(threshold_down, 2)
-    print(f"Начинаем с candidate_price = {candidate_price:.2f}")
+        for price_level, effective_qty in filtered_orders:
+            if price_level <= candidate_price:
+                print(f"{price_level} <= {candidate_price}")
+                continue
 
-    for price_level, effective_qty in filtered_orders:
-        if price_level <= candidate_price:
-            
-            continue
+            multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_down) / (threshold_up - threshold_down))
+            dynamic_threshold = base_wall_qty_threshold * multiplier
 
-        multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_down) / (threshold_up - threshold_down))
-        dynamic_threshold = base_wall_qty_threshold * multiplier
+            if effective_qty >= dynamic_threshold:
+                candidate_price = price_level + 0.01
+                print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} (порог {dynamic_threshold:.2f}) "
+                    f"считается стенкой. Новая candidate_price = {candidate_price:.2f}")
+            else:
+                print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} не прошёл проверку (требуется {dynamic_threshold:.2f}).")
+        if candidate_price >= threshold_up:
+            logs[skin] = {"candidate_price >= threshold_up": [candidate_price, threshold_up],
+                        "timestamp_skip": datetime.now().isoformat()}
+            return False, None, False
+        
+        return True, candidate_price, approx_true
 
-        if effective_qty >= dynamic_threshold:
-            candidate_price = price_level + 0.01
-            print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} (порог {dynamic_threshold:.2f}) "
-                  f"считается стенкой. Новая candidate_price = {candidate_price:.2f}")
-        else:
-            print(f"Оrдер на {price_level:.2f} с эффективным количеством {effective_qty:.2f} не прошёл проверку (требуется {dynamic_threshold:.2f}).")
-    if candidate_price >= threshold_up:
-        logs[skin] = {"candidate_price >= threshold_up": [candidate_price, threshold_up],
-                      "timestamp_skip": datetime.now().isoformat()}
-        return False, None
-
-    return True, candidate_price
 
 
 
 
 if __name__ == "__main__":
+    # setting tornet
+    TOR_SOCKS_PROXY = "socks5h://127.0.0.1:9050"
+    proxies={"http": TOR_SOCKS_PROXY, "https": TOR_SOCKS_PROXY}
 
 
     # Регистрируем обработчик сигнала (Ctrl+C)
@@ -307,9 +311,8 @@ if __name__ == "__main__":
         
         if (approx_max - approx_min) > current_price_pass*0.2:
             approx_price = approx_min
-            logs[skin] = {"approx": [approx_max, approx_price, approx_max-approx_min]}
-            save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
-        
+            print(f"Сработала апроксимация. Используется approx_min = {approx_min:.2f}, разница по апроксимации = {approx_max - approx_min:.2f}")
+
         if skin in item_nameids:
             skin_id = item_nameids[skin]
         if skin in logs:
@@ -324,19 +327,26 @@ if __name__ == "__main__":
             timestamp_price = datetime.fromisoformat(date_price).date()
         
         print(f"Получение данных для '{skin}' .")
-        price, skin_orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price)
+        price, skin_orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
         
-        decision, order_price = analyze_orders_weights(price, skin_orders, approx_price)
+        decision, order_price, approx_true = analyze_orders_weights(price, skin_orders, approx_price)
         
         # Buy logic
         if decision:
             url = generate_market_url(skin)
             weight_number_of_items = round(int(weight_number_of_items), 0)
             buy_skin(driver_headless, url, order_price, weight_number_of_items)
-            logs[skin] = {"order_price": order_price,
-                            "weight_number_of_items": weight_number_of_items,
-                            "url": url,
-                            "timestamp": datetime.now().isoformat()}
+            if approx_true:
+                logs[skin] = {"order_price": order_price,
+                                "approx_diffrence": approx_max - approx_min,
+                                "weight_number_of_items": weight_number_of_items,
+                                "url": url,
+                                "timestamp": datetime.now().isoformat()}
+            else:
+                logs[skin] = {"order_price": order_price,
+                                "weight_number_of_items": weight_number_of_items,
+                                "url": url,
+                                "timestamp": datetime.now().isoformat()}
             save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
     
     
