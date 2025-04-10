@@ -1,118 +1,230 @@
+#get_inventory
+import requests
+import json
+import os
+import sys
+import signal
+from datetime import datetime, time
+from selenium_stealth import stealth
+from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
-import time
-import json
-import sys
-import signal
-import os
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException
-from datetime import datetime
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
-from utils.utils import save_data, signal_handler, generate_market_url
+from utils.utils import save_data, signal_handler
+from market_making.place_orders import get_market_data
 
-def get_orders_data(url, keep_browser_open=False):
-    """
-    Открывает страницу, кликает по нужным элементам и извлекает информацию.
-    Возвращает список строк с информацией.
-    """
-
-    wait = WebDriverWait(driver, 10)  # Ожидание до 10 секунд
-    
-    try:
-        driver.get(url)
-        try:
-            check_for_errors = wait.until(EC.presence_of_element_located(
-                (By.XPATH, "/html/body/div[1]/div[7]/div[4]/div[1]/div[4]/div[1]/div[2]/div/div")
-            ))
-            if check_for_errors.text.strip() == "There are no listings for this item.":
-                return None
-        except TimeoutException:
-            # Если элемент не найден, продолжаем выполнение
-            pass
-
-        # Извлекаем стенку с ордерами
-        time.sleep(4)
-        price_now_element = wait.until(EC.presence_of_element_located(
-            (By.CSS_SELECTOR, "#sih_block_best_offer_of_marketplace_tabs_2 > div > div.row.markets_container > div.column.steam_container > div.price")
-        ))
-        price_now_str = price_now_element.text
-        # Приводим цену к числовому значению (убираем пробел и символ валюты)
-        price_now = float(price_now_str.replace(" ₸", "").replace(" ", ""))
         
-
-        if not keep_browser_open:
-            driver.close()
-        driver.switch_to.window(driver.window_handles[0])
-        return price_now
-    finally:
-        if not keep_browser_open:
-            driver.quit()  # Закрытие всех вкладок и завершение работы браузера
-
-def analyze_to_sell_v1(current_price, order_price):
-    if order_price is None:
-        return True, current_price
-    minimum_price = order_price*1.15
-    if current_price < minimum_price:
-        return True, minimum_price
-    else:
-        return True, current_price
-
 def steam_login(driver):
     login_url = "https://steamcommunity.com/login/home/"
     driver.get(login_url)
     
-    WebDriverWait(driver, 99999999999).until(EC.presence_of_element_located((By.XPATH, "/html/body/div[1]/div[7]/div[7]/div[1]/div[1]/div/div/div/div[1]/div[1]/span[1]")))
+    # Ожидаем появления элемента, свидетельствующего об успешном входе (например, имя пользователя)
+    WebDriverWait(driver, 99999999999).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "actual_persona_name"))
+    )
     print("Авторизация в Steam выполнена.")
-
-
-if __name__ == "__main__":
-    options = webdriver.ChromeOptions()
-    options.add_extension("/home/pustrace/programming/trade/steam/extensions/steam_invenory_helper2.3.1_0.crx")
-    options.add_argument("--start-maximized")
     
-    service = Service()
+def setup_driver(headless=True):
+    options = webdriver.ChromeOptions()
+    if headless:
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1920,1080")
+    else:
+        options.add_argument("--start-maximized")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+    
+    service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
+    
+    # Применяем настройки stealth для обхода антибот-защиты
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True)
+    return driver
+
+def load_cookies(driver, cookies):
+    """Загружает cookies в драйвер."""
+    driver.get("https://steamcommunity.com/")
+    for cookie in cookies:
+        # Удаляем поле 'expiry', если оно присутствует, чтобы не возникло ошибок
+        if 'expiry' in cookie:
+            cookie.pop('expiry')
+        driver.add_cookie(cookie)
+    driver.refresh()
+
+def get_inventory():
+    url = f'https://steamcommunity.com/profiles/76561198857946351/inventory/json/730/2/?l=english'
+    session = requests.Session()
+    cookies = {
+        'steamLoginSecure': os.getenv("STEAM_LOGIN_SECURE"),
+    }
+    session.cookies.update(cookies)
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    }
+    response = session.get(url, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        with open('/home/pustrace/programming/trade/steam/database/timer.json', 'r') as file:
+            skins_data = json.load(file)
+
+        # Извлечение market_hash_name, cache_expiration и текущего времени
+        for item in data['rgDescriptions'].values():
+            market_hash_name = item['market_hash_name']
+
+            # Проверка на наличие cache_expiration
+            cache_expiration = item.get('cache_expiration', None)
+            skins_data[market_hash_name] = {'cache_expiration': cache_expiration}
+
+            save_data(skins_data, '/home/pustrace/programming/trade/steam/database/timer.json')
+
+    else:
+        print(f"Ошибка {response.status_code}")
+
+def check_cup(current_price, my_order_price, orders):
+
+    return True
+
+def check_loss(current_price, my_order_price):
+    if current_price*0.86 < my_order_price:
+        return True
+    else:
+        return False
+    
+def sell_skin():
+    print("sell_skin")
+    
+def cancel_order(skin, url):
+    print("cancel_order")
+
+#main code
+if __name__ == "__main__":
+    margin = 0
+    # setting tornet
+    TOR_SOCKS_PROXY = "socks5h://127.0.0.1:9050"
+    proxies={"http": TOR_SOCKS_PROXY, "https": TOR_SOCKS_PROXY}
+
 
     # Регистрируем обработчик сигнала (Ctrl+C)
     signal.signal(signal.SIGINT, signal_handler)
-    steam_login(driver)
-
-    with open("/home/pustrace/programming/trade/steam/database/timer.json", "r", encoding="utf-8") as f:
-        skins = json.load(f)
     
-    consecutive_errors = 0
-    max_attempts = 6
-        
-for skin_name, skin_data in skins.items():
-    if skin_name in skins and "sell_price" in skins[skin_name] and "timestamp_place_to_sell" in skins[skin_name] and "This_item_is_missing" in skins[skin_name]:
-        print(f"'{skin_data}' уже обработан")
-        continue
-    if "cache_expiration" not in skin_data:
-        continue
-    elif skin_data["cache_expiration"] is None:
-        url = generate_market_url(skin_name)
-        current_price = get_orders_data(url, keep_browser_open=True)
-        if current_price is None:
-            skins[skin_name] = {"This_item_is_missing": datetime.now().isoformat()}
-            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
-            continue
-        order_price = skin_data.get("order_price")
-        decision, sell_price = analyze_to_sell_v1(current_price, order_price)
-        if decision:
-            print(f"Продать '{skin_name}' на {sell_price}")
-            # автопродажа не реализовано
-            # sell_skin(sell_price)
-            skins[skin_name] = {"sell_price": sell_price, "timestamp_place_to_sell": datetime.now().isoformat()}
-            save_data(skins, "/home/pustrace/programming/trade/steam/database/timer.json")
-    else:
-        continue
+    # 1. Запуск драйвера в обычном режиме для логина
+    driver_normal = setup_driver(headless=False)
+    steam_login(driver_normal)
+    cookies = driver_normal.get_cookies()
+    driver_normal.quit()  # Закрываем обычный браузер
+    driver_headless = setup_driver(headless=True)
+    load_cookies(driver_headless, cookies)
 
+    with open("/home/pustrace/programming/trade/steam/database/logs.json", "r") as file:
+        logs = json.load(file)
+    with open ("/home/pustrace/programming/trade/steam/database/item_nameids.json", "r", encoding="utf-8") as f:
+        item_nameids = json.load(f)
+    with open ("/home/pustrace/programming/trade/steam/database/orders.json", "r") as file:
+        all_orders = json.load(file)
+    with open ("/home/pustrace/programming/trade/steam/database/database.json", "r") as file:
+        database = json.load(file)
+    with open ("/home/pustrace/programming/trade/steam/database/inventory.json", "r") as file:
+        inventory = json.load(file)
+
+    get_inventory()
+    
+    # Сначала обрабатываем те, которых нет в инвентаре
+    for skin, data in logs.items():
+        if skin in inventory:
+            continue  # пропускаем, обработаем позже
+
+        order_price = data.get("order_price")
+        weight_number_of_items = data.get("weight_number_of_items")
+        url = data.get("url")
+        timestamp_logs = data.get("timestamp")
+        timestamp = datetime.fromisoformat(timestamp_logs).date()
+        
+        if skin in item_nameids:
+            skin_id = item_nameids[skin]
+        
+        if skin in all_orders:
+            date_orders = all_orders[skin].get("timestamp_orders")
+            timestamp_orders = datetime.fromisoformat(date_orders).date()
+        
+        if skin in database:
+            date_price = database[skin].get("timestamp")    
+            timestamp_price = datetime.fromisoformat(date_price).date()
+
+        print(f"Получение данных для '{skin}' .")
+        price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
+        cup = check_cup(price, order_price, orders)
+        loss = check_loss(price, order_price)
+        if cup or loss:
+            cancel_order(skin, url)
+
+    # Теперь обрабатываем предметы, которые есть в инвентаре
+    for skin, data in logs.items():
+        if skin not in inventory:
+            continue  # уже обработано выше
+
+        order_price = data.get("order_price")
+        url = data.get("url")
+        if skin in item_nameids:
+            skin_id = item_nameids[skin]
+        
+        if skin in all_orders:
+            date_orders = all_orders[skin].get("timestamp_orders")
+            timestamp_orders = datetime.fromisoformat(date_orders).date()
+        
+        if skin in database:
+            date_price = database[skin].get("timestamp")    
+            timestamp_price = datetime.fromisoformat(date_price).date()
+
+        print(f"Получение данных для '{skin}' .")
+        price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
+
+        lowest_price = price.get("lowest_price")
+        median_price = price.get("median_price")
         
         
-    print("Парсинг завершён.")
+        if median_price:
+            current_price = median_price
+        else:
+            current_price = lowest_price
+        
+        margin = order_price - current_price
+        
+        if 0 > margin > -15:
+            sell_skin(driver_headless, url, order_price)
+            logs[skin] = {
+                "order_price": order_price,
+                "margin": margin,
+                "timestamp_when_placed_to_sell": datetime.now().isoformat()
+            }
+        elif margin > 0:
+            sell_skin(driver_headless, url, order_price)
+            logs[skin] = {
+                "order_price": order_price,
+                "margin": margin,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            logs[skin] = {
+                "order_price": order_price,
+                "margin": margin,
+                "timestamp": datetime.now().isoformat()
+            }
+
+        save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
+
+    
+    print("Выставление ордеров завершено.")
+    driver_headless.quit()
