@@ -64,41 +64,45 @@ def load_cookies(driver, cookies):
         driver.add_cookie(cookie)
     driver.refresh()
 
-def get_inventory():
-    url = f'https://steamcommunity.com/profiles/76561198857946351/inventory/json/730/2/?l=english'
+def get_inventory(steam_cookie=None):
+    url = 'https://steamcommunity.com/profiles/76561198857946351/inventory/json/730/2/?l=english'
     session = requests.Session()
-    cookies = {
-        'steamLoginSecure': os.getenv("STEAM_LOGIN_SECURE"),
-    }
+    
+    # Если кука не была передана, падаем обратно на os.getenv (на всякий случай)
+    if steam_cookie is None:
+        steam_cookie = os.getenv("STEAM_LOGIN_SECURE")
+        if steam_cookie is None:
+            print("Ошибка: не найдена кука steamLoginSecure ни в параметрах, ни в переменных окружения!")
+            return
+    cookies = {'steamLoginSecure': steam_cookie}
     session.cookies.update(cookies)
+    
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+        'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                       'AppleWebKit/537.36 (KHTML, like Gecko) '
+                       'Chrome/58.0.3029.110 Safari/537.36')
     }
     response = session.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        with open('/home/pustrace/programming/trade/steam/database/timer.json', 'r') as file:
+        with open('/home/pustrace/programming/trade/steam/database/inventory.json', 'r') as file:
             skins_data = json.load(file)
-
-        # Извлечение market_hash_name, cache_expiration и текущего времени
-        for item in data['rgDescriptions'].values():
-            market_hash_name = item['market_hash_name']
-
-            # Проверка на наличие cache_expiration
+        # Обработка полученных предметов
+        for item in data.get('rgDescriptions', {}).values():
+            market_hash_name = item.get('market_hash_name')
             cache_expiration = item.get('cache_expiration', None)
             skins_data[market_hash_name] = {'cache_expiration': cache_expiration}
-
-            save_data(skins_data, '/home/pustrace/programming/trade/steam/database/timer.json')
-
+            save_data(skins_data, '/home/pustrace/programming/trade/steam/database/inventory.json')
+        return skins_data
     else:
-        print(f"Ошибка {response.status_code}")
+        print(f"Ошибка запроса инвентаря: статус {response.status_code}")
 
-def check_cup(current_price, my_order_price, orders):
+def check_cup(current_price, my_my_price, orders):
 
     return True
 
-def check_loss(current_price, my_order_price):
-    if current_price*0.86 < my_order_price:
+def check_loss(current_price, my_price):
+    if current_price*0.86 < my_price:
         return True
     else:
         return False
@@ -124,7 +128,20 @@ if __name__ == "__main__":
     driver_normal = setup_driver(headless=False)
     steam_login(driver_normal)
     cookies = driver_normal.get_cookies()
-    driver_normal.quit()  # Закрываем обычный браузер
+    steam_cookie = None
+    for cookie in cookies:
+        if cookie.get("name") == "steamLoginSecure":
+            steam_cookie = cookie.get("value")
+            break
+
+    if steam_cookie is None:
+        print("Не найдена кука steamLoginSecure!")
+    driver_normal.quit()
+
+    # Передаём полученную куку в get_inventory:
+    inventory = get_inventory(steam_cookie)
+
+
     driver_headless = setup_driver(headless=True)
     load_cookies(driver_headless, cookies)
 
@@ -136,46 +153,43 @@ if __name__ == "__main__":
         all_orders = json.load(file)
     with open ("/home/pustrace/programming/trade/steam/database/database.json", "r") as file:
         database = json.load(file)
-    with open ("/home/pustrace/programming/trade/steam/database/inventory.json", "r") as file:
-        inventory = json.load(file)
-
-    get_inventory()
     
-    # Сначала обрабатываем те, которых нет в инвентаре
-    for skin, data in logs.items():
-        if skin in inventory:
-            continue  # пропускаем, обработаем позже
+    # # Сначала обрабатываем те, которых нет в инвентаре
+    # for skin, data in logs.items():
+    #     if skin in inventory:
+    #         continue  # пропускаем, обработаем позже
 
-        order_price = data.get("order_price")
-        weight_number_of_items = data.get("weight_number_of_items")
-        url = data.get("url")
-        timestamp_logs = data.get("timestamp")
-        timestamp = datetime.fromisoformat(timestamp_logs).date()
+    #     my_price = data.get("order_price")
+    #     weight_number_of_items = data.get("weight_number_of_items")
+    #     url = data.get("url")
+    #     timestamp_logs = data.get("timestamp")
+    #     timestamp = datetime.fromisoformat(timestamp_logs).date()
         
-        if skin in item_nameids:
-            skin_id = item_nameids[skin]
+    #     if skin in item_nameids:
+    #         skin_id = item_nameids[skin]
         
-        if skin in all_orders:
-            date_orders = all_orders[skin].get("timestamp_orders")
-            timestamp_orders = datetime.fromisoformat(date_orders).date()
+    #     if skin in all_orders:
+    #         date_orders = all_orders[skin].get("timestamp_orders")
+    #         timestamp_orders = datetime.fromisoformat(date_orders).date()
         
-        if skin in database:
-            date_price = database[skin].get("timestamp")    
-            timestamp_price = datetime.fromisoformat(date_price).date()
+    #     if skin in database:
+    #         date_price = database[skin].get("timestamp")    
+    #         timestamp_price = datetime.fromisoformat(date_price).date()
 
-        print(f"Получение данных для '{skin}' .")
-        price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
-        cup = check_cup(price, order_price, orders)
-        loss = check_loss(price, order_price)
-        if cup or loss:
-            cancel_order(skin, url)
+    #     print(f"Получение данных для '{skin}' .")
+    #     price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
+    #     cup = check_cup(price, my_price, orders)
+    #     loss = check_loss(price, my_price)
+    #     if cup or loss:
+    #         cancel_order(skin, url)
+            
 
     # Теперь обрабатываем предметы, которые есть в инвентаре
     for skin, data in logs.items():
         if skin not in inventory:
             continue  # уже обработано выше
 
-        order_price = data.get("order_price")
+        my_price = data.get("order_price")
         url = data.get("url")
         if skin in item_nameids:
             skin_id = item_nameids[skin]
@@ -200,25 +214,25 @@ if __name__ == "__main__":
         else:
             current_price = lowest_price
         
-        margin = order_price - current_price
+        margin = my_price - current_price
         
         if 0 > margin > -15:
-            sell_skin(driver_headless, url, order_price)
+            sell_skin(driver_headless, url, my_price)
             logs[skin] = {
-                "order_price": order_price,
+                "my_price": my_price,
                 "margin": margin,
                 "timestamp_when_placed_to_sell": datetime.now().isoformat()
             }
         elif margin > 0:
-            sell_skin(driver_headless, url, order_price)
+            sell_skin(driver_headless, url, my_price)
             logs[skin] = {
-                "order_price": order_price,
+                "my_price": my_price,
                 "margin": margin,
                 "timestamp": datetime.now().isoformat()
             }
         else:
             logs[skin] = {
-                "order_price": order_price,
+                "my_price": my_price,
                 "margin": margin,
                 "timestamp": datetime.now().isoformat()
             }
