@@ -141,29 +141,27 @@ def check_loss(current_price, my_price):
 def cancel_order(skin, url):
     print('В разработке')
     
-def sell_skin(driver, url, price):
+import requests
+
+def sell_skin(price, list_of_assets, sessionid, steam_login_secure, webTradeEligibility):
     url = "https://steamcommunity.com/market/sellitem/"
-
-    # Данные, передаваемые в теле запроса
-    data = {
-        "sessionid": "fe94b29f6198731a4a6d77fb",
-        "appid": "730",
-        "contextid": "2",
-        "assetid": "43172290190",
-        "amount": "1",
-        "price": price*100
-    }
-
-    # Заголовки, приближённо копирующие исходный запрос
+    
+    price_for_steam = int(price * 100)
+    
+    # Обновляем cookie-строку с динамическим sessionid
+    cookie_template = (
+        "timezoneOffset=10800,0; browserid=139153173029783763; recentlyVisitedAppHubs=730; "
+        "strInventoryLastContext=730_2; sessionid={sessionid}; "
+        "webTradeEligibility={webTradeEligibility}; "
+        "steamLoginSecure={steam_login_secure}"
+    ).format(sessionid=sessionid, steam_login_secure=steam_login_secure, webTradeEligibility=webTradeEligibility)
+    
+    # Создаем сессию для повторного использования
+    session = requests.Session()
+    
     headers = {
         "Host": "steamcommunity.com",
-        "Cookie": ("timezoneOffset=10800,0; browserid=139153173029783763; recentlyVisitedAppHubs=730; "
-                "strInventoryLastContext=730_2; sessionid=fe94b29f6198731a4a6d77fb; "
-                "webTradeEligibility=%7B%22allowed%22%3A1%2C%22allowed_at_time%22%3A0%2C"
-                "%22steamguard_required_days%22%3A15%2C%22new_device_cooldown_days%22%3A0%2C"
-                "%22time_checked%22%3A1741437384%7D; app_impressions=730@2_9_100006_100202; "
-                "steamCountry=PL%7C114b729a8d1ce0807d35e8b90fda10df; "
-                "steamLoginSecure=76561198857946351%7C%7CeyAidHlwIjogIkpXVCIsICJhbGciOiAiRWREU0EiIH0.6zDn3GR8l_bcafRTcvYkCwun4FGyUKNCtgdGjJmz147nRMfc6LP4AQpF6Vptqq5nXVDiFJOoO37nR-yB4CK2Bg"),
+        "Cookie": cookie_template,
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0",
         "Accept": "*/*",
         "Accept-Language": "en-US,en;q=0.5",
@@ -173,12 +171,23 @@ def sell_skin(driver, url, price):
         "Referer": "https://steamcommunity.com/profiles/76561198857946351/inventory",
         "Dnt": "1"
     }
+    
+    for asset in list_of_assets:
+        data = {
+            "sessionid": sessionid,
+            "appid": "730",
+            "contextid": "2",
+            "assetid": asset,
+            "amount": "1",
+            "price": price_for_steam
+        }
+        response = session.post(url, headers=headers, data=data)
+        
+        if response.status_code == 200:
+            print(f"Asset {asset} успешно выставлен на продажу.\nОтвет: {response.text}")
+        else:
+            print(f"Ошибка при продаже asset {asset}: {response.status_code}\nОтвет: {response.text}")
 
-    # Отправляем POST-запрос
-    response = requests.post(url, headers=headers, data=data)
-
-    # Выводим ответ сервера (тут может быть JSON или HTML, в зависимости от реализации Steam)
-    print(response.text)
     
 
 
@@ -205,15 +214,29 @@ if __name__ == "__main__":
 
     if steam_cookie is None:
         print("Не найдена кука steamLoginSecure!")
+        
+    steam_session_cookie = None
+    for cookie in cookies:
+        if cookie.get("name") == "sessionid":
+            steam_session_cookie = cookie.get("value")
+            break
+
+    if steam_session_cookie is None:
+        print("Не найдена кука sessionid!")
+        
+    webTradeEligibility = None
+    for cookie in cookies:
+        if cookie.get("name") == "webTradeEligibility":
+            webTradeEligibility = cookie.get("value")
+            break
+
+    if webTradeEligibility is None:
+        print("Не найдена кука sessionid!")
+    
     driver_normal.quit()
 
     # Передаём полученную куку в get_inventory:
     inventory = get_inventory(steam_cookie)
-    print(inventory)
-    input("Ожидание...")
-
-    driver_headless = setup_driver(headless=True)
-    load_cookies(driver_headless, cookies)
 
     with open("/home/pustrace/programming/trade/steam/database/logs.json", "r") as file:
         logs = json.load(file)
@@ -258,6 +281,7 @@ if __name__ == "__main__":
     for skin, data in logs.items():
         if skin not in inventory:
             continue  # уже обработано выше
+        list_of_assets = inventory[skin].get("asset_ids")
 
         my_price = data.get("order_price")
         url = data.get("url")
@@ -280,23 +304,25 @@ if __name__ == "__main__":
         
         
         if median_price:
-            current_price = median_price
+            current_price = float(median_price.replace("₸", "").replace(",", ".").replace(" ", "").strip())
         else:
-            current_price = lowest_price
+            current_price = float(lowest_price.replace("₸", "").replace(",", ".").replace(" ", "").strip())
         
-        margin = my_price - current_price
+        for_margin = current_price - my_price/0.87
         
-        if 0 > margin:
-            sell_skin(driver_headless, url, my_price)
+        margin = for_margin * 100 / my_price 
+        
+        if margin < -1:
+            sell_skin(my_price/0.87, list_of_assets, steam_session_cookie, steam_cookie, webTradeEligibility)
             logs[skin] = {
-                "my_sell_price": my_price,
+                "my_sell_price": my_price/0.87,
                 "margin": margin,
                 "timestamp_when_placed_to_sell": datetime.now().isoformat()
             }
         else:
-            sell_skin(driver_headless, url, my_price + margin)
+            sell_skin(current_price*1.02, list_of_assets, steam_session_cookie, steam_cookie, webTradeEligibility)
             logs[skin] = {
-                "my_sell_price": my_price + margin,
+                "my_sell_price": current_price*1.02,
                 "margin": margin,
                 "timestamp": datetime.now().isoformat()
             }
@@ -305,4 +331,3 @@ if __name__ == "__main__":
 
     
     print("Sell is complite.")
-    driver_headless.quit()

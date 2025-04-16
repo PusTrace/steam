@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 import time
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import json
 import signal
 from selenium.webdriver.support.ui import WebDriverWait
@@ -24,19 +24,20 @@ from utils.tornet import change_ip
 
 def get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies):
     today = date.today()  # Пример формата 'YYYY-MM-DD'
-    
+    yesterday = today - timedelta(days=1)
+
     # Проверяем, если ордеры уже получены сегодня, читаем их из файла
     item_orders = None
-    if timestamp_orders == today:
-        print(f"Пропускаем {skin}, ордера уже были получены сегодня. Чтение из JSON.")
+    if timestamp_orders == today or timestamp_orders == yesterday:
+        print(f"Пропускаем {skin}, ордера уже были получены недавно. Чтение из JSON.")
         with open("/home/pustrace/programming/trade/steam/database/orders.json", "r", encoding="utf-8") as f:
             orders_data = json.load(f)
         item_orders = orders_data.get(skin)
     
     # Проверяем, если цена уже получена сегодня, читаем её из файла
     item_price = None
-    if timestamp_price == today:
-        print(f"Пропускаем {skin}, цена была получена сегодня. Чтение из JSON.")
+    if timestamp_price == today or timestamp_orders == yesterday:
+        print(f"Пропускаем {skin}, цена была получена недавно. Чтение из JSON.")
         with open("/home/pustrace/programming/trade/steam/database/database.json", "r", encoding="utf-8") as f:
             price_data = json.load(f)
         item_price = price_data.get(skin)

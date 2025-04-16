@@ -3,7 +3,10 @@
         "order_price": 246.85999999999999,
         "weight_number_of_items": 11,
         "url": "https://steamcommunity.com/market/listings/730/Desert%20Eagle%20%7C%20Corinthian%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-09T23:08:30.905431"
+        "timestamp": "2025-03-09T23:08:30.905431",
+        "my_sell_price": 283.74712643678157,
+        "margin": -18.320961855619203,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:51:15.953240"
     },
     "MP9 | Bioleak (Factory New)": {
         "order_price": 276.89,
@@ -21,19 +24,27 @@
         "order_price": 676.73,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/AWP%20%7C%20Acheron%20%28Well-Worn%29",
-        "timestamp": "2025-03-09T23:09:24.850859"
+        "timestamp": "2025-03-09T23:09:24.850859",
+        "my_sell_price": 777.8505747126437,
+        "margin": -21.401530109887805,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:51:26.289767"
     },
     "StatTrak™ FAMAS | Meow 36 (Battle-Scarred)": {
         "order_price": 64.37,
         "weight_number_of_items": 6,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20FAMAS%20%7C%20Meow%2036%20%28Battle-Scarred%29",
-        "timestamp": "2025-03-09T23:10:41.399665"
+        "timestamp": "2025-04-16T16:51:40.303431",
+        "my_sell_price": 79.3866,
+        "margin": 5.967833234229547
     },
     "Galil AR | VariCamo (Factory New)": {
         "order_price": 116.36,
         "weight_number_of_items": 26,
         "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20VariCamo%20%28Factory%20New%29",
-        "timestamp": "2025-03-11T16:58:16.756202"
+        "timestamp": "2025-03-11T16:58:16.756202",
+        "my_sell_price": 133.7471264367816,
+        "margin": -9.064220038485386,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:51:56.425116"
     },
     "XM1014 | Hieroglyph (Field-Tested)": {
         "order_price": 7.4,
@@ -61,7 +72,9 @@
         "approx_diffrence": 38.11000000000001,
         "weight_number_of_items": 10,
         "url": "https://steamcommunity.com/market/listings/730/Sawed-Off%20%7C%20Black%20Sand%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T17:09:06.528548"
+        "timestamp": "2025-04-16T16:52:09.385781",
+        "my_sell_price": 56.5488,
+        "margin": 84.62550582160323
     },
     "G3SG1 | Hunter (Field-Tested)": {
         "order_price": 30.14,
@@ -109,7 +122,10 @@
         "order_price": 83.07000000000001,
         "weight_number_of_items": 6,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20SG%20553%20%7C%20Aloha%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T17:19:52.215147"
+        "timestamp": "2025-03-11T17:19:52.215147",
+        "my_sell_price": 95.48275862068967,
+        "margin": -13.666496473684445,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:52:19.830139"
     },
     "Sawed-Off | Black Sand (Well-Worn)": {
         "order_price": 16.84,
@@ -123,7 +139,10 @@
         "approx_diffrence": 25.189999999999998,
         "weight_number_of_items": 6,
         "url": "https://steamcommunity.com/market/listings/730/SSG%2008%20%7C%20Abyss%20%28Battle-Scarred%29",
-        "timestamp": "2025-03-11T17:24:16.229139"
+        "timestamp": "2025-03-11T17:24:16.229139",
+        "my_sell_price": 109.41379310344828,
+        "margin": -16.329229019275424,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:52:29.979439"
     },
     "P90 | Elite Build (Field-Tested)": {
         "order_price": 149.14,
@@ -137,7 +156,10 @@
         "approx_diffrence": 122.47,
         "weight_number_of_items": 6,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20G3SG1%20%7C%20Ventilator%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T17:28:29.565181"
+        "timestamp": "2025-03-11T17:28:29.565181",
+        "my_sell_price": 132.96551724137933,
+        "margin": -25.661754185148105,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:52:49.490155"
     },
     "SG 553 | Danger Close (Battle-Scarred)": {
         "order_price": 21.16,
@@ -151,7 +173,10 @@
         "approx_diffrence": 39.33,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/MP9%20%7C%20Modest%20Threat%20%28Well-Worn%29",
-        "timestamp": "2025-03-11T17:34:30.434894"
+        "timestamp": "2025-03-11T17:34:30.434894",
+        "my_sell_price": 84.83908045977012,
+        "margin": -28.96501891311491,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:53:00.904460"
     },
     "P250 | Franklin (Factory New)": {
         "order_price": 628.87,
@@ -179,7 +204,10 @@
         "approx_diffrence": 57.56,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20P2000%20%7C%20Oceanic%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T18:23:51.468062"
+        "timestamp": "2025-03-11T18:23:51.468062",
+        "my_sell_price": 154.60919540229884,
+        "margin": -7.500702849080981,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:53:12.946836"
     },
     "StatTrak™ SSG 08 | Mainframe 001 (Factory New)": {
         "order_price": 866.61,
@@ -192,21 +220,28 @@
         "approx_diffrence": 14.36,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/Dual%20Berettas%20%7C%20Contractor%20%28Well-Worn%29",
-        "timestamp": "2025-03-11T18:30:57.951347"
+        "timestamp": "2025-03-11T18:30:57.951347",
+        "my_sell_price": 6.1609195402298855,
+        "margin": -11.024618287870993,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:53:25.938323"
     },
     "FAMAS | Colony (Minimal Wear)": {
         "order_price": 4.72,
         "approx_diffrence": 8.55,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/FAMAS%20%7C%20Colony%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-11T18:31:13.675542"
+        "timestamp": "2025-04-16T16:53:39.002631",
+        "my_sell_price": 7.8336,
+        "margin": 47.76933567114748
     },
     "SSG 08 | Blue Spruce (Minimal Wear)": {
         "order_price": 5.33,
         "approx_diffrence": 14.170000000000002,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/SSG%2008%20%7C%20Blue%20Spruce%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-11T18:31:29.592209"
+        "timestamp": "2025-04-16T16:53:49.200359",
+        "my_sell_price": 11.4342,
+        "margin": 95.37642060770743
     },
     "G3SG1 | Desert Storm (Field-Tested)": {
         "order_price": 4.01,
@@ -227,7 +262,9 @@
         "approx_diffrence": 7.890000000000001,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/XM1014%20%7C%20Blue%20Spruce%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-11T18:33:53.344838"
+        "timestamp": "2025-04-16T16:54:02.150107",
+        "my_sell_price": 12.4746,
+        "margin": 124.86139283299529
     },
     "G3SG1 | VariCamo (Factory New)": {
         "order_price": 36.44,
@@ -248,14 +285,18 @@
         "approx_diffrence": 10.61,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/MP7%20%7C%20Army%20Recon%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T18:36:05.740985"
+        "timestamp": "2025-04-16T16:54:15.235703",
+        "my_sell_price": 6.0078,
+        "margin": 24.30097008233472
     },
     "Galil AR | Sage Spray (Field-Tested)": {
         "order_price": 4.3,
         "approx_diffrence": 8.02,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20Sage%20Spray%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T18:36:40.119710"
+        "timestamp": "2025-04-16T16:54:27.900118",
+        "my_sell_price": 6.069,
+        "margin": 23.429564287623634
     },
     "P2000 | Oceanic (Field-Tested)": {
         "order_price": 77.12,
@@ -283,7 +324,10 @@
         "approx_diffrence": 202.60999999999999,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/Five-SeveN%20%7C%20Midnight%20Paintover%20%28Battle-Scarred%29",
-        "timestamp": "2025-03-11T18:45:23.082762"
+        "timestamp": "2025-03-11T18:45:23.082762",
+        "my_sell_price": 64.94252873563218,
+        "margin": -52.00447563828704,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:54:40.710255"
     },
     "AUG | Condemned (Battle-Scarred)": {
         "order_price": 18.02,
@@ -297,33 +341,47 @@
         "approx_diffrence": 354.69999999999993,
         "weight_number_of_items": 4,
         "url": "https://steamcommunity.com/market/listings/730/StatTrak%E2%84%A2%20R8%20Revolver%20%7C%20Junk%20Yard%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-11T18:51:57.127007"
+        "timestamp": "2025-03-11T18:51:57.127007",
+        "my_sell_price": 609.4137931034483,
+        "margin": -3.742770158518306,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:54:51.417877"
     },
     "Tec-9 | Red Quartz (Minimal Wear)": {
         "order_price": 54.54,
         "approx_diffrence": 15.869999999999997,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/Tec-9%20%7C%20Red%20Quartz%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-11T18:59:26.916432"
+        "timestamp": "2025-04-16T16:55:01.603591",
+        "my_sell_price": 78.58080000000001,
+        "margin": 26.311596676909083
     },
     "M4A1-S | Nitro (Well-Worn)": {
         "order_price": 336.21,
         "approx_diffrence": 122.20000000000005,
         "weight_number_of_items": 3,
         "url": "https://steamcommunity.com/market/listings/730/M4A1-S%20%7C%20Nitro%20%28Well-Worn%29",
-        "timestamp": "2025-03-11T19:01:23.611215"
+        "timestamp": "2025-03-11T19:01:23.611215",
+        "my_sell_price": 386.44827586206895,
+        "margin": -10.879591880690327,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:55:12.698273"
     },
     "Galil AR | VariCamo (Field-Tested)": {
         "order_price": 44.86,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/Galil%20AR%20%7C%20VariCamo%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T19:04:15.853367"
+        "timestamp": "2025-03-11T19:04:15.853367",
+        "my_sell_price": 51.5632183908046,
+        "margin": -2.057999087839054,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:55:23.601417"
     },
     "M249 | Gator Mesh (Field-Tested)": {
         "order_price": 44.86,
         "weight_number_of_items": 5,
         "url": "https://steamcommunity.com/market/listings/730/M249%20%7C%20Gator%20Mesh%20%28Field-Tested%29",
-        "timestamp": "2025-03-11T19:05:45.097587"
+        "timestamp": "2025-03-11T19:05:45.097587",
+        "my_sell_price": 51.5632183908046,
+        "margin": -6.271106533224699,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:55:33.849241"
     },
     "UMP-45 | Labyrinth (Factory New)": {
         "order_price": 113.13,
@@ -351,7 +409,10 @@
         "approx_diffrence": 209.91999999999996,
         "weight_number_of_items": 3,
         "url": "https://steamcommunity.com/market/listings/730/MAC-10%20%7C%20Rangeen%20%28Minimal%20Wear%29",
-        "timestamp": "2025-03-11T20:31:44.766886"
+        "timestamp": "2025-03-11T20:31:44.766886",
+        "my_sell_price": 294.65517241379314,
+        "margin": -17.59125118540789,
+        "timestamp_when_placed_to_sell": "2025-04-16T16:55:45.566693"
     },
     "Glock-18 | Wraiths (Minimal Wear)": {
         "order_price": 316.45,
