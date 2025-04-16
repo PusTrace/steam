@@ -64,16 +64,18 @@ def load_cookies(driver, cookies):
         driver.add_cookie(cookie)
     driver.refresh()
 
+
 def get_inventory(steam_cookie=None):
-    url = 'https://steamcommunity.com/profiles/76561198857946351/inventory/json/730/2/?l=english'
+    url = 'https://steamcommunity.com/inventory/76561198857946351/730/2'
     session = requests.Session()
     
-    # Если кука не была передана, падаем обратно на os.getenv (на всякий случай)
+    # Если кука не передана, берем из переменных окружения
     if steam_cookie is None:
         steam_cookie = os.getenv("STEAM_LOGIN_SECURE")
         if steam_cookie is None:
             print("Ошибка: не найдена кука steamLoginSecure ни в параметрах, ни в переменных окружения!")
             return
+
     cookies = {'steamLoginSecure': steam_cookie}
     session.cookies.update(cookies)
     
@@ -82,36 +84,102 @@ def get_inventory(steam_cookie=None):
                        'AppleWebKit/537.36 (KHTML, like Gecko) '
                        'Chrome/58.0.3029.110 Safari/537.36')
     }
+    
     response = session.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
+
+        # Загружаем сохранённые данные скинов
         with open('/home/pustrace/programming/trade/steam/database/inventory.json', 'r') as file:
             skins_data = json.load(file)
-        # Обработка полученных предметов
-        for item in data.get('rgDescriptions', {}).values():
+
+        # Получаем списки assets и описаний
+        assets = data.get('assets', [])
+        descriptions = data.get('descriptions', [])
+
+        # Собираем все данные по asset'ам в список
+        asset_data_list = []
+        for asset in assets:
+            asset_info = {
+                "assetid": asset.get('assetid'),
+                "classid": asset.get('classid'),
+                "instanceid": asset.get('instanceid')
+            }
+            asset_data_list.append(asset_info)
+
+        # Проходим по описаниям и ищем в asset_data_list совпадения по classid и instanceid
+        for item in descriptions:
             market_hash_name = item.get('market_hash_name')
-            cache_expiration = item.get('cache_expiration', None)
-            skins_data[market_hash_name] = {'cache_expiration': cache_expiration}
-            save_data(skins_data, '/home/pustrace/programming/trade/steam/database/inventory.json')
-        return skins_data
+            marketable = item.get('marketable')
+            classid = item.get('classid')
+            instanceid = item.get('instanceid')
+            asset_ids = []
+
+            for asset_item in asset_data_list:
+                if classid == asset_item.get('classid') and instanceid == asset_item.get('instanceid'):
+                    asset_ids.append(asset_item.get('assetid'))
+            
+            # Записываем собранные данные в skins_data
+            skins_data[market_hash_name] = {
+                'marketable': marketable,
+                'classid': classid,
+                'instanceid': instanceid,
+                'asset_ids': asset_ids
+            }
+        save_data(skins_data, '/home/pustrace/programming/trade/steam/database/inventory.json')
     else:
         print(f"Ошибка запроса инвентаря: статус {response.status_code}")
+        
 
 def check_cup(current_price, my_my_price, orders):
-
-    return True
+    print('В разработке')
 
 def check_loss(current_price, my_price):
-    if current_price*0.86 < my_price:
-        return True
-    else:
-        return False
-    
-def sell_skin():
-    print("sell_skin")
+    print('В разработке')
     
 def cancel_order(skin, url):
-    print("cancel_order")
+    print('В разработке')
+    
+def sell_skin(driver, url, price):
+    url = "https://steamcommunity.com/market/sellitem/"
+
+    # Данные, передаваемые в теле запроса
+    data = {
+        "sessionid": "fe94b29f6198731a4a6d77fb",
+        "appid": "730",
+        "contextid": "2",
+        "assetid": "43172290190",
+        "amount": "1",
+        "price": price*100
+    }
+
+    # Заголовки, приближённо копирующие исходный запрос
+    headers = {
+        "Host": "steamcommunity.com",
+        "Cookie": ("timezoneOffset=10800,0; browserid=139153173029783763; recentlyVisitedAppHubs=730; "
+                "strInventoryLastContext=730_2; sessionid=fe94b29f6198731a4a6d77fb; "
+                "webTradeEligibility=%7B%22allowed%22%3A1%2C%22allowed_at_time%22%3A0%2C"
+                "%22steamguard_required_days%22%3A15%2C%22new_device_cooldown_days%22%3A0%2C"
+                "%22time_checked%22%3A1741437384%7D; app_impressions=730@2_9_100006_100202; "
+                "steamCountry=PL%7C114b729a8d1ce0807d35e8b90fda10df; "
+                "steamLoginSecure=76561198857946351%7C%7CeyAidHlwIjogIkpXVCIsICJhbGciOiAiRWREU0EiIH0.6zDn3GR8l_bcafRTcvYkCwun4FGyUKNCtgdGjJmz147nRMfc6LP4AQpF6Vptqq5nXVDiFJOoO37nR-yB4CK2Bg"),
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "https://steamcommunity.com",
+        "Referer": "https://steamcommunity.com/profiles/76561198857946351/inventory",
+        "Dnt": "1"
+    }
+
+    # Отправляем POST-запрос
+    response = requests.post(url, headers=headers, data=data)
+
+    # Выводим ответ сервера (тут может быть JSON или HTML, в зависимости от реализации Steam)
+    print(response.text)
+    
+
 
 #main code
 if __name__ == "__main__":
@@ -140,7 +208,8 @@ if __name__ == "__main__":
 
     # Передаём полученную куку в get_inventory:
     inventory = get_inventory(steam_cookie)
-
+    print(inventory)
+    input("Ожидание...")
 
     driver_headless = setup_driver(headless=True)
     load_cookies(driver_headless, cookies)
@@ -216,23 +285,17 @@ if __name__ == "__main__":
         
         margin = my_price - current_price
         
-        if 0 > margin > -15:
+        if 0 > margin:
             sell_skin(driver_headless, url, my_price)
             logs[skin] = {
-                "my_price": my_price,
+                "my_sell_price": my_price,
                 "margin": margin,
                 "timestamp_when_placed_to_sell": datetime.now().isoformat()
             }
-        elif margin > 0:
-            sell_skin(driver_headless, url, my_price)
-            logs[skin] = {
-                "my_price": my_price,
-                "margin": margin,
-                "timestamp": datetime.now().isoformat()
-            }
         else:
+            sell_skin(driver_headless, url, my_price + margin)
             logs[skin] = {
-                "my_price": my_price,
+                "my_sell_price": my_price + margin,
                 "margin": margin,
                 "timestamp": datetime.now().isoformat()
             }
@@ -240,5 +303,5 @@ if __name__ == "__main__":
         save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
 
     
-    print("Выставление ордеров завершено.")
+    print("Sell is complite.")
     driver_headless.quit()
