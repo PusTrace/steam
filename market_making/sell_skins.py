@@ -127,6 +127,7 @@ def get_inventory(steam_cookie=None):
                 'asset_ids': asset_ids
             }
         save_data(skins_data, '/home/pustrace/programming/trade/steam/database/inventory.json')
+        return skins_data
     else:
         print(f"Ошибка запроса инвентаря: статус {response.status_code}")
         
