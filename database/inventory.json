@@ -1,26 +1,17 @@
 {
-    "R8 Revolver | Nitro (Minimal Wear)": {
+    "PP-Bizon | Facility Sketch (Battle-Scarred)": {
         "marketable": 1,
-        "classid": "3035567755",
+        "classid": "3035588409",
         "instanceid": "302028390",
         "asset_ids": [
-            "43028459471"
-        ]
-    },
-    "Revolution Case": {
-        "marketable": 1,
-        "classid": "5189384637",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42944744403"
-        ]
-    },
-    "G3SG1 | Polar Camo (Battle-Scarred)": {
-        "marketable": 1,
-        "classid": "310777816",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42690606184"
+            "43334606362",
+            "43334606305",
+            "43334606290",
+            "43334606251",
+            "43334606135",
+            "43334605955",
+            "43334605913",
+            "43334605898"
         ]
     },
     "Fracture Case": {
@@ -28,260 +19,49 @@
         "classid": "3946324730",
         "instanceid": "302028390",
         "asset_ids": [
-            "42690606183"
+            "43334606133",
+            "43334606098"
         ]
     },
-    "MP7 | Army Recon (Field-Tested)": {
+    "Revolution Case": {
         "marketable": 1,
-        "classid": "310776668",
+        "classid": "5189384637",
         "instanceid": "302028390",
         "asset_ids": [
-            "42658014774",
-            "42658014273",
-            "42647668016",
-            "42646845654",
-            "42645588724"
+            "43334606125",
+            "43334595539"
         ]
     },
-    "Galil AR | Sage Spray (Field-Tested)": {
+    "R8 Revolver | Nitro (Minimal Wear)": {
         "marketable": 1,
-        "classid": "310776543",
+        "classid": "3035567755",
         "instanceid": "302028390",
         "asset_ids": [
-            "42648725034",
-            "42648453200",
-            "42647818684",
-            "42640357130",
-            "42511228281"
+            "43334606122"
         ]
     },
-    "Desert Eagle | Corinthian (Minimal Wear)": {
+    "MP9 | Buff Blue (Field-Tested)": {
         "marketable": 1,
-        "classid": "1440506091",
-        "instanceid": "6276346446",
+        "classid": "6918201516",
+        "instanceid": "302028390",
         "asset_ids": [
-            "42578439587"
-        ]
-    },
-    "SSG 08 | Abyss (Battle-Scarred)": {
-        "marketable": 1,
-        "classid": "520026916",
-        "instanceid": "6424312583",
-        "asset_ids": [
-            "42642493727"
-        ]
-    },
-    "StatTrak™ R8 Revolver | Junk Yard (Minimal Wear)": {
-        "marketable": 1,
-        "classid": "4428757460",
-        "instanceid": "188530398",
-        "asset_ids": [
-            "42587626778"
+            "43334605881"
         ]
     },
     "StatTrak™ SG 553 | Aloha (Field-Tested)": {
         "marketable": 1,
         "classid": "2735395489",
-        "instanceid": "6917659933",
+        "instanceid": "6277716378",
         "asset_ids": [
-            "42617452550"
+            "43334604974"
         ]
     },
-    "FAMAS | Colony (Minimal Wear)": {
+    "Kilowatt Case": {
         "marketable": 1,
-        "classid": "310777698",
+        "classid": "5710094579",
         "instanceid": "302028390",
         "asset_ids": [
-            "42611125433",
-            "42609864524",
-            "42609567376",
-            "42609528290",
-            "42597364864"
-        ]
-    },
-    "XM1014 | Blue Spruce (Minimal Wear)": {
-        "marketable": 1,
-        "classid": "310778439",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42569329745",
-            "42555823148",
-            "42537690104",
-            "42528197768",
-            "42514112867"
-        ]
-    },
-    "Five-SeveN | Midnight Paintover (Battle-Scarred)": {
-        "marketable": 1,
-        "classid": "6216346721",
-        "instanceid": "519977179",
-        "asset_ids": [
-            "42560059537",
-            "42560058439",
-            "42560057230",
-            "42560055793",
-            "42560039784"
-        ]
-    },
-    "MP9 | Modest Threat (Well-Worn)": {
-        "marketable": 1,
-        "classid": "3113370577",
-        "instanceid": "188530139",
-        "asset_ids": [
-            "42540649964",
-            "42523756897",
-            "42523111551"
-        ]
-    },
-    "StatTrak™ P2000 | Oceanic (Field-Tested)": {
-        "marketable": 1,
-        "classid": "1703179034",
-        "instanceid": "188530170",
-        "asset_ids": [
-            "42540463336",
-            "42533599021",
-            "42532468214"
-        ]
-    },
-    "AWP | Acheron (Well-Worn)": {
-        "marketable": 1,
-        "classid": "3035713977",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42536294892"
-        ]
-    },
-    "SSG 08 | Blue Spruce (Minimal Wear)": {
-        "marketable": 1,
-        "classid": "310777545",
-        "instanceid": "6404985955",
-        "asset_ids": [
-            "42529434141"
-        ]
-    },
-    "Tec-9 | Red Quartz (Minimal Wear)": {
-        "marketable": 1,
-        "classid": "310790881",
-        "instanceid": "6316169357",
-        "asset_ids": [
-            "42517719836"
-        ]
-    },
-    "M249 | Gator Mesh (Field-Tested)": {
-        "marketable": 1,
-        "classid": "310778538",
-        "instanceid": "480085569",
-        "asset_ids": [
-            "42524978771"
-        ]
-    },
-    "Galil AR | VariCamo (Field-Tested)": {
-        "marketable": 1,
-        "classid": "310776584",
-        "instanceid": "480085569",
-        "asset_ids": [
-            "42521780703",
-            "42521620140"
-        ]
-    },
-    "M4A1-S | Nitro (Well-Worn)": {
-        "marketable": 1,
-        "classid": "310777140",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42515927902",
-            "42515495864"
-        ]
-    },
-    "Galil AR | VariCamo (Factory New)": {
-        "marketable": 1,
-        "classid": "310780146",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42514034579",
-            "42513216107",
-            "42513132483",
-            "42512997112",
-            "42511884573",
-            "42510297090",
-            "42510146461",
-            "42509763039",
-            "42509683081"
-        ]
-    },
-    "MAC-10 | Rangeen (Minimal Wear)": {
-        "marketable": 1,
-        "classid": "1309993549",
-        "instanceid": "188530139",
-        "asset_ids": [
-            "42512049304",
-            "42512049296",
-            "42512049283"
-        ]
-    },
-    "StatTrak™ FAMAS | Meow 36 (Battle-Scarred)": {
-        "marketable": 1,
-        "classid": "4910469836",
-        "instanceid": "188530170",
-        "asset_ids": [
-            "42511131463",
-            "42509830986",
-            "42509503918",
-            "42506386096",
-            "42498446380",
-            "42497780960"
-        ]
-    },
-    "Dual Berettas | Contractor (Well-Worn)": {
-        "marketable": 1,
-        "classid": "310777133",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42510521663",
-            "42510519007",
-            "42510515761",
-            "42510198609",
-            "42510198591"
-        ]
-    },
-    "StatTrak™ G3SG1 | Ventilator (Field-Tested)": {
-        "marketable": 1,
-        "classid": "1934478716",
-        "instanceid": "188530170",
-        "asset_ids": [
-            "42509103925",
-            "42509103891",
-            "42509103886",
-            "42509103882",
-            "42509103872",
-            "42509103866",
-            "42478132904"
-        ]
-    },
-    "Sawed-Off | Black Sand (Field-Tested)": {
-        "marketable": 1,
-        "classid": "3113365049",
-        "instanceid": "188530139",
-        "asset_ids": [
-            "42471321205",
-            "42470127168",
-            "42469873296",
-            "42469619651"
-        ]
-    },
-    "PP-Bizon | Facility Sketch (Battle-Scarred)": {
-        "marketable": 1,
-        "classid": "3035588409",
-        "instanceid": "302028390",
-        "asset_ids": [
-            "42469662652",
-            "42469662636",
-            "42469662584",
-            "42469662516",
-            "42469662502",
-            "42469662492",
-            "42469662486",
-            "42469662477"
+            "43334595758"
         ]
     },
     "Premier Season One Medal": {

@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import signal
+import pandas as pd
 from datetime import datetime, time
 from selenium_stealth import stealth
 from webdriver_manager.chrome import ChromeDriverManager
@@ -132,16 +133,38 @@ def get_inventory(steam_cookie=None):
         print(f"Ошибка запроса инвентаря: статус {response.status_code}")
         
 
-def check_cup(current_price, my_my_price, orders):
-    print('В разработке')
+def check_CupAndLoss(my_price, current_price, orders, volume):
+    if current_price/0.87 < my_price:
+        return True
+    
+    df = pd.DataFrame(orders, columns=['price', 'count', 'description'])
 
-def check_loss(current_price, my_price):
-    print('В разработке')
+    # Находим строку, где price == my_price (сравнение с округлением до 2 знаков из-за float)
+    match = df[round(df['price'], 2) == round(my_price, 2)]
+
+    # Если ордер найден
+    if not match.empty:
+        order_count = match.iloc[0]['count']
+        if volume * 32 > order_count:
+            return True
+        if volume == None:
+            print("Объем равен None")
+
     
 def cancel_order(skin, url):
     print('В разработке')
     
-import requests
+def delete_order(skin):
+    """Удаляет информацию о передаваемом skin из указанного JSON файла."""
+    with open("/home/pustrace/programming/trade/steam/database/logs.json", "r") as file:
+        data = json.load(file)
+    if skin in data:
+        del data[skin]
+        with open("/home/pustrace/programming/trade/steam/database/logs.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+
+    
 
 def sell_skin(price, list_of_assets, sessionid, steam_login_secure, webTradeEligibility):
     url = "https://steamcommunity.com/market/sellitem/"
@@ -248,36 +271,40 @@ if __name__ == "__main__":
         database = json.load(file)
     
     # # Сначала обрабатываем те, которых нет в инвентаре
-    # for skin, data in logs.items():
-    #     if skin in inventory:
-    #         continue  # пропускаем, обработаем позже
+    for skin, data in logs.items():
+        if skin in inventory:
+            continue  # пропускаем, обработаем позже
 
-    #     my_price = data.get("order_price")
-    #     weight_number_of_items = data.get("weight_number_of_items")
-    #     url = data.get("url")
-    #     timestamp_logs = data.get("timestamp")
-    #     timestamp = datetime.fromisoformat(timestamp_logs).date()
+        my_price = data.get("order_price")
+        url = data.get("url")
         
-    #     if skin in item_nameids:
-    #         skin_id = item_nameids[skin]
-        
-    #     if skin in all_orders:
-    #         date_orders = all_orders[skin].get("timestamp_orders")
-    #         timestamp_orders = datetime.fromisoformat(date_orders).date()
-        
-    #     if skin in database:
-    #         date_price = database[skin].get("timestamp")    
-    #         timestamp_price = datetime.fromisoformat(date_price).date()
+        if skin in item_nameids:
+            skin_id = item_nameids[skin]
 
-    #     print(f"Получение данных для '{skin}' .")
-    #     price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
-    #     cup = check_cup(price, my_price, orders)
-    #     loss = check_loss(price, my_price)
-    #     if cup or loss:
-    #         cancel_order(skin, url)
-            
+        if skin in all_orders:
+            date_orders = all_orders[skin].get("timestamp_orders")
+            timestamp_orders = datetime.fromisoformat(date_orders).date()
 
-    # Теперь обрабатываем предметы, которые есть в инвентаре
+        if skin in database:
+            date_price = database[skin].get("timestamp")    
+            timestamp_price = datetime.fromisoformat(date_price).date()
+
+        print(f"Получение данных для '{skin}' .")
+        price, orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
+        
+        lowest_price = price.get("lowest_price")
+        median_price = price.get("median_price")
+        volume = price.get("volume")
+        
+        if median_price:
+            current_price = float(median_price.replace("₸", "").replace(",", ".").replace(" ", "").strip())
+        else:
+            current_price = float(lowest_price.replace("₸", "").replace(",", ".").replace(" ", "").strip())
+        
+        CupAndLoss = check_CupAndLoss(my_price, current_price, orders, volume)
+        if CupAndLoss:
+            cancel_order(skin, url)
+
     for skin, data in logs.items():
         if skin not in inventory:
             continue  # уже обработано выше
@@ -312,8 +339,15 @@ if __name__ == "__main__":
         
         margin = for_margin * 100 / my_price 
         
-        if margin < -1:
-            sell_skin(my_price/0.87, list_of_assets, steam_session_cookie, steam_cookie, webTradeEligibility)
+        if margin < -9:
+            sell_skin(my_price, list_of_assets, steam_session_cookie, steam_cookie, webTradeEligibility)
+            logs[skin] = {
+                "my_sell_price": my_price/0.87,
+                "margin": margin,
+                "timestamp_when_placed_to_sell": datetime.now().isoformat()
+            }
+        elif 0 > margin > -9:
+            sell_skin(my_price*1.02, list_of_assets, steam_session_cookie, steam_cookie, webTradeEligibility)
             logs[skin] = {
                 "my_sell_price": my_price/0.87,
                 "margin": margin,
