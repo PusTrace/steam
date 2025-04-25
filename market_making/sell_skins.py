@@ -211,7 +211,8 @@ def sell_skin(price, list_of_assets, sessionid, steam_login_secure, webTradeElig
         else:
             print(f"Ошибка при продаже asset {asset}: {response.status_code}\nОтвет: {response.text}")
 
-    
+def get_all_orders_ids():
+    print("Получение всех ордеров.")    
 
 
 #main code
@@ -271,6 +272,7 @@ if __name__ == "__main__":
         database = json.load(file)
     
     # # Сначала обрабатываем те, которых нет в инвентаре
+    get_all_orders_ids()
     for skin, data in logs.items():
         if skin in inventory:
             continue  # пропускаем, обработаем позже
