@@ -1,72 +1,98 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium_stealth import stealth
 import requests
-import os
-import json
+from bs4 import BeautifulSoup
 
-def get_inventory(steam_cookie=None):
-    url = 'https://steamcommunity.com/inventory/76561198857946351/730/2'
-    session = requests.Session()
+def steam_login(driver):
+    login_url = "https://steamcommunity.com/login/home/"
+    driver.get(login_url)
     
-    # Если кука не передана, берем из переменных окружения
-    if steam_cookie is None:
-        steam_cookie = os.getenv("STEAM_LOGIN_SECURE")
-        if steam_cookie is None:
-            print("Ошибка: не найдена кука steamLoginSecure ни в параметрах, ни в переменных окружения!")
-            return
-
-    cookies = {'steamLoginSecure': steam_cookie}
-    session.cookies.update(cookies)
-    
-    headers = {
-        'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                       'AppleWebKit/537.36 (KHTML, like Gecko) '
-                       'Chrome/58.0.3029.110 Safari/537.36')
-    }
-    
-    response = session.get(url, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-
-        # Загружаем сохранённые данные скинов
-        with open('/home/pustrace/programming/trade/steam/database/inventory.json', 'r') as file:
-            skins_data = json.load(file)
-
-        # Получаем списки assets и описаний
-        assets = data.get('assets', [])
-        descriptions = data.get('descriptions', [])
-
-        # Собираем все данные по asset'ам в список
-        asset_data_list = []
-        for asset in assets:
-            asset_info = {
-                "assetid": asset.get('assetid'),
-                "classid": asset.get('classid'),
-                "instanceid": asset.get('instanceid')
-            }
-            asset_data_list.append(asset_info)
-
-        # Проходим по описаниям и ищем в asset_data_list совпадения по classid и instanceid
-        for item in descriptions:
-            market_hash_name = item.get('market_hash_name')
-            marketable = item.get('marketable')
-            classid = item.get('classid')
-            instanceid = item.get('instanceid')
-            asset_ids = []
-
-            for asset_item in asset_data_list:
-                if classid == asset_item.get('classid') and instanceid == asset_item.get('instanceid'):
-                    asset_ids.append(asset_item.get('assetid'))
-            
-            # Записываем собранные данные в skins_data
-            skins_data[market_hash_name] = {
-                'marketable': marketable,
-                'classid': classid,
-                'instanceid': instanceid,
-                'asset_ids': asset_ids
-            }
-        
+    # Ожидаем появления элемента, свидетельствующего об успешном входе (например, имя пользователя)
+    WebDriverWait(driver, 99999999999).until(
+        EC.presence_of_element_located((By.CLASS_NAME, "actual_persona_name"))
+    )
+    print("Авторизация в Steam выполнена.")
+def setup_driver(headless=True):
+    options = webdriver.ChromeOptions()
+    if headless:
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1920,1080")
     else:
-        print(f"Ошибка запроса инвентаря: статус {response.status_code}")
+        options.add_argument("--start-maximized")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+    
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
+    
+    # Применяем настройки stealth для обхода антибот-защиты
+    stealth(driver,
+            languages=["en-US", "en"],
+            vendor="Google Inc.",
+            platform="Win32",
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True)
+    return driver
+
+
+import requests
+from bs4 import BeautifulSoup
+
+def get_list_of_my_orders(cookies_from_browser):
+    url = "https://steamcommunity.com/market/"
+
+    session = requests.Session()
+
+    # Просто закидываем ВСЕ куки в сессию
+    for cookie in cookies_from_browser:
+        session.cookies.set(cookie['name'], cookie['value'])
+
+    headers = {
+        "Host": "steamcommunity.com",
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:137.0) Gecko/20100101 Firefox/137.0",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "https://steamcommunity.com",
+        "Referer": "https://steamcommunity.com/profiles/76561198857946351/inventory",
+        "Dnt": "1"
+    }
+
+    response = session.get(url, headers=headers)
+    with open("response.html", "w", encoding="utf-8") as file:
+        file.write(response.text)
+    if response.status_code == 200:
+        print("Запрос выполнен успешно.")
+        soup = BeautifulSoup(response.text, "html.parser")
         
-        
-#main code
-get_inventory()
+        orders = soup.find_all("div", id=lambda x: x and x.startswith("mybuyorder_"))
+
+        for order_div in orders:
+            order_id_full = order_div.get("id")
+            order_id = order_id_full.split("_")[1]
+
+            item_name_tag = order_div.find("a", class_="market_listing_item_name_link")
+            if item_name_tag:
+                item_name = item_name_tag.text.strip()
+                print(f"OrderID: {order_id} | Название предмета: {item_name}")
+            else:
+                print(f"OrderID: {order_id} | Название предмета не найдено.")
+    else:
+        print(f"Ошибка запроса: {response.status_code}")
+
+
+
+if __name__ == "__main__":
+    driver_normal = setup_driver(headless=False)
+    steam_login(driver_normal)
+    cookies = driver_normal.get_cookies()
+    driver_normal.quit()
+    my_list_information = get_list_of_my_orders(cookies)
