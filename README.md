@@ -1,9 +1,6 @@
-<h3 align="center">Steam Trade Bot</h3>
+<h2 align="center">Steam Trade Bot</h2>
 
-<div align="center">
-[![Status](https://img.shields.io/badge/status-active-success.svg)]
-</div>
-
+<h3 align="center">Проект находится в активной разработке</h3>
 ---
 ⚠️ Данный проект создан исключительно в учебных целях. Использование в обход правил Steam запрещено.
 
