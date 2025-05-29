@@ -2,8 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 import time
-from datetime import datetime, date, timedelta
-import json
+from datetime import datetime, date, timedelta, timezone
 import os
 import psycopg2
 from selenium.webdriver.support.ui import WebDriverWait
@@ -13,39 +12,43 @@ from selenium.common.exceptions import TimeoutException
 from selenium_stealth import stealth
 from webdriver_manager.chrome import ChromeDriverManager
 from bin.get_order_info import get_orders
+from bin.get_history import get_history
 from bin.tornet import change_ip
+from bin.utils import generate_market_url
 
-def get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies):
-    today = date.today()  # Пример формата 'YYYY-MM-DD'
-    yesterday = today - timedelta(days=1)
+def get_market_data(id, skin_name, timestamp_orders, timestamp_price, skin_id, cursor):
 
-    # Проверяем, если ордеры уже получены сегодня, читаем их из файла
-    item_orders = None
-    if timestamp_orders == today or timestamp_orders == yesterday:
-        print(f"Пропускаем {skin}, ордера уже были получены недавно. Чтение из JSON.")
-        with open("/home/pustrace/programming/trade/steam/database/orders.json", "r", encoding="utf-8") as f:
-            orders_data = json.load(f)
-        item_orders = orders_data.get(skin)
-    
     errors = 0
     while errors < 6:
-        # Если данные ордеров отсутствуют, запрашиваем их
-        if not item_orders:
-            item_orders = get_orders(skin_id, proxies)
-            if item_orders:
-                # Обновляем JSON-файл с ордерами
-                save_data({skin: item_orders}, "/home/pustrace/programming/trade/steam/database/orders.json")
-                errors = 0
-                time.sleep(3.5)
+        try:
+            # Проверяем, нужно ли брать новые ордера
+            if timestamp_orders is None or timestamp_orders < date.today() - timedelta(days=1):
+                item_orders = get_orders(skin_id)
             else:
-                errors += 1
-                if errors >= 2:
-                    print("Превышено количество ошибок меняем айпи.")
-                    change_ip()
-                time.sleep(10)
-        
-        if item_price and item_orders:
-            return item_price, item_orders
+                cursor.execute("SELECT data FROM orders WHERE skin_id = %s", (id,))
+                result = cursor.fetchone()
+                if result:
+                    item_orders = result[0]  # assuming data is in first column
+                else:
+                    item_orders = None
+
+            # Проверяем, нужно ли брать новые цены
+            if timestamp_price is None or timestamp_price < date.today() - timedelta(days=1):
+                item_price = get_history(skin_name)
+            else:
+                cursor.execute("SELECT date, price, volume FROM pricehistory WHERE skin_id = %s", (id,))
+                item_price = cursor.fetchall()
+
+            return item_price, item_orders  # Успешно получили данные — возвращаем
+
+        except Exception as e:
+            print("Ошибка при получении данных:", e)
+            errors += 1
+            if errors >= 2:
+                print("Превышено количество ошибок, меняем IP.")
+                change_ip()
+            time.sleep(20)
+        return item_price, item_orders
 
         
 def steam_login(driver):
@@ -223,16 +226,53 @@ def analyze_orders_weights(price, orders, approx_price):
         
         return True, candidate_price, approx_true
 
+def analyze_price(history):
+    now = datetime.now(timezone.utc)
+    one_week_ago = now - timedelta(days=7)
 
+    total_price = 0.0
+    volume = 0
+    count = 0
+
+    last_week_records = []
+
+    for record in history:
+        dt = datetime.fromisoformat(record[0].replace('Z', '+00:00'))
+        if dt >= one_week_ago:
+            _price = record[1]
+            _volume = record[2]
+            total_price += _price
+            volume += _volume
+            count += 1
+            last_week_records.append(record)
+
+    if count == 0:
+        print("Нет данных за последнюю неделю.")
+        return
+
+    price = total_price / count
+
+    # Сортировка по цене
+    sorted_by_price = sorted(last_week_records, key=lambda x: x[1])
+
+    # 3 самых дешёвых
+    cheapest = sorted_by_price[:3]
+    approx_min = sum([r[1] for r in cheapest]) / len(cheapest)
+
+    # 3 самых дорогих
+    most_expensive = sorted_by_price[-3:]
+    approx_max = sum([r[1] for r in most_expensive]) / len(most_expensive)
+    
+    return price, volume, approx_max, approx_min
 
 
 
 if __name__ == "__main__":
-    # 1. Запуск драйвера в обычном режиме для логина
+    # Запуск драйвера для логина и получения cookies
     driver_normal = setup_driver(headless=False)
     steam_login(driver_normal)
     cookies = driver_normal.get_cookies()
-    driver_normal.quit()  # Закрываем обычный браузер
+    driver_normal.quit()
     driver_headless = setup_driver(headless=True)
     load_cookies(driver_headless, cookies)
 
@@ -244,67 +284,109 @@ if __name__ == "__main__":
         password=os.getenv("DEFAULT_PASSWORD")
     )
     cursor = conn.cursor()
-    cursor.execute("SELECT item_nameid, item_name FROM items")
 
-    for skin, data in sorted(perfect.items(), key=lambda x: x[1].get("weight_of_items", 0), reverse=True):
-        if skin in logs: 
-            print (f"Orders is exists for {skin}")
-            continue
-        approx_min = data.get("approx_min")
-        approx_max = data.get("approx_max")
-        median_price = data.get("median_price")
-        lowest_price = data.get("lowest_price")
-        volume = data.get("volume")
-        weight_number_of_items = data.get("weight_number_of_items")
-        approx_price = None
-        if approx_min is None or approx_max is None:
-            print(f"Не удалось получить данные о цене для '{skin}'")
-        
-        if median_price is not None or median_price < lowest_price:
-            current_price_pass = median_price
-        else:
-            current_price_pass = lowest_price
-        
-        if (approx_max - approx_min) > current_price_pass*0.2:
-            approx_price = approx_min
-            print(f"Сработала апроксимация. Используется approx_min = {approx_min:.2f}, разница по апроксимации = {approx_max - approx_min:.2f}")
+    # Получаем все скины из таблицы skins
+    cursor.execute(
+        """
+        SELECT id, name, orders_timestamp, price_timestamp, item_name_id
+        FROM skins
+        WHERE 
+            (DATE(price_timestamp) IS DISTINCT FROM %s OR DATE(orders_timestamp) IS DISTINCT FROM %s)
+            AND item_name_id IS NOT NULL
+        """,
+        (date.today(), date.today())
+    )
+    skins_data = cursor.fetchall()
 
-        if skin in item_nameids:
-            skin_id = item_nameids[skin]
-        if skin in logs:
-            print(f"Логи для '{skin}' уже существуют")
-            continue
+    for id, name, orders_timestamp, price_timestamp, item_name_id in skins_data:
+        print(f"Fetching market data for '{name}'...")
+        price_history, skin_orders = get_market_data(id, name, orders_timestamp, price_timestamp, cursor, item_name_id)
+
+        cursor.execute("""
+            INSERT INTO orders (id, skin_orders)
+            VALUES (%s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET skin_orders = EXCLUDED.skin_orders
+        """, (id, skin_orders))
+        conn.commit()
         
-        if skin in all_orders:
-            date_orders = all_orders[skin].get("timestamp_orders")
-            timestamp_orders = datetime.fromisoformat(date_orders).date()
-        if skin in database:
-            date_price = database[skin].get("timestamp")    
-            timestamp_price = datetime.fromisoformat(date_price).date()
+        cursor.execute("""
+            INSERT INTO skins (id, orders_timestamp)
+            VALUES (%s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET orders_timestamp = EXCLUDED.orders_timestamp
+        """, (id, datetime.now().isoformat()))
+        conn.commit()
         
-        print(f"Получение данных для '{skin}' .")
-        price, skin_orders = get_market_data(skin, skin_id, timestamp_orders, timestamp_price, proxies)
-        
-        decision, order_price, approx_true = analyze_orders_weights(price, skin_orders, approx_price)
-        
-        # Buy logic
-        if decision:
-            url = generate_market_url(skin)
-            weight_number_of_items = round(int(weight_number_of_items), 0)
-            buy_skin(driver_headless, url, order_price, weight_number_of_items)
-            if approx_true:
-                logs[skin] = {"order_price": order_price,
-                                "approx_diffrence": approx_max - approx_min,
-                                "weight_number_of_items": weight_number_of_items,
-                                "url": url,
-                                "timestamp": datetime.now().isoformat()}
+        for record in price_history:
+            date_str, price, volume = record
+            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            hour = dt.hour
+
+            # Проверяем наличие записи
+            cursor.execute("""
+                SELECT 1 FROM pricehistory WHERE id = %s AND date = %s
+            """, (id, dt))
+            exists = cursor.fetchone()
+
+            if exists:
+                if hour == 0:
+                    # Обновляем только если час = 0
+                    cursor.execute("""
+                        UPDATE pricehistory
+                        SET price = %s, volume = %s
+                        WHERE id = %s AND date = %s
+                    """, (price, volume, id, dt))
             else:
-                logs[skin] = {"order_price": order_price,
-                                "weight_number_of_items": weight_number_of_items,
-                                "url": url,
-                                "timestamp": datetime.now().isoformat()}
-            save_data(logs, "/home/pustrace/programming/trade/steam/database/logs.json")
-    
-    
-    print("Выставление ордеров завершено.")
+                # Вставляем новую запись
+                cursor.execute("""
+                    INSERT INTO pricehistory (id, date, price, volume)
+                    VALUES (%s, %s, %s, %s)
+                """, (id, dt, price, volume))
+        conn.commit()
+        
+        cursor.execute("""
+            INSERT INTO skins (id, price_timestamp)
+            VALUES (%s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET price_timestamp = EXCLUDED.price_timestamp
+        """, (id, datetime.now().isoformat()))
+        conn.commit()
+        
+        # Анализируем цену
+        price, volume, approx_max, approx_min = analyze_price(price_history)
+        
+        cursor.execute("""
+            INSERT INTO skins (id, price, volume, approx_max, approx_min, analysis_timestamp)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE
+            SET price = EXCLUDED.price, volume = EXCLUDED.volume, approx_max = EXCLUDED.approx_max, approx_min = EXCLUDED.approx_min, analysis_timestamp = EXCLUDED.analysis_timestamp
+        """, (id, price, volume, approx_max, approx_min, datetime.now().isoformat()))
+        conn.commit()
+
+        decision, order_price, approx_true = analyze_orders_weights(price, skin_orders, None)
+
+        if decision:
+            url = generate_market_url(name)
+            weight_number_of_items = round(int(skin_orders.get("weight_number_of_items", 0)), 0)
+            buy_skin(driver_headless, url, order_price, weight_number_of_items)
+
+            # Сохраняем логи в базу (аналог logs[skin] = {...})
+            cursor.execute("""
+                INSERT INTO logs (skin_name, order_price, approx_difference, weight_number_of_items, url, timestamp)
+                VALUES (%s, %s, %s, %s, %s, now())
+            """, (
+                name,
+                order_price,
+                (price.get("approx_max", 0) - price.get("approx_min", 0)) if approx_true else None,
+                weight_number_of_items,
+                url
+            ))
+            conn.commit()
+
+        time.sleep(3.5)
+
+    print("Orders placement complete.")
     driver_headless.quit()
+    cursor.close()
+    conn.close()
