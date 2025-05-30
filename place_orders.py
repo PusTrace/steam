@@ -140,43 +140,23 @@ def buy_skin(driver, url, order_price, weight_number_of_items):
         print("Ошибка:", e)
         driver.quit()
 
-def analyze_orders_weights(price, orders, approx_price):
-    median_price_str = price.get("median_price")
-    lowest_price_str = price.get("lowest_price")
-    volume_str = price.get("volume")
-    volume = int(volume_str.replace(",", "").strip())
-    approx_true = False
-    
-    # Обработка цен
-    if median_price_str is not None:
-        median_price = float(median_price_str.replace("₸", "").replace(",", ".").replace(" ", "").strip())
-    else:
-        median_price = None
-        
-    if lowest_price_str is not None:
-        lowest_price = float(lowest_price_str.replace("₸", "").replace(",", ".").replace(" ", "").strip())
-    else:
-        lowest_price = None
+def analyze_orders_weights(price, volume, approx_max, approx_min, skin_orders):
 
-    if median_price is None:
-        median_price = lowest_price
-    if lowest_price is None:
-        lowest_price = median_price
+    approx_true = False
 
     buy_order_graph = orders.get("buy_order_graph", [])
     
     active_check_orders = 0
     max_multiplier = 2
-    current_price = median_price if median_price is not None else lowest_price
 
     # Установка пороговых значений
-    if approx_price is not None:
-        threshold_down = approx_price * 0.83
-        threshold_up = approx_price * 0.94
+    if price is not None:
+        threshold_down = price * 0.83
+        threshold_up = price * 0.94
         approx_true = True
     else:
-        threshold_down = current_price * 0.74
-        threshold_up = current_price * 0.84
+        threshold_down = price * 0.74
+        threshold_up = price * 0.84
 
     base_wall_qty_threshold = volume * 0.1
 
@@ -303,11 +283,11 @@ if __name__ == "__main__":
         price_history, skin_orders = get_market_data(id, name, orders_timestamp, price_timestamp, cursor, item_name_id)
 
         cursor.execute("""
-            INSERT INTO orders (id, skin_orders)
-            VALUES (%s, %s)
+            INSERT INTO orders (id, data, skin_name)
+            VALUES (%s, %s, %s)
             ON CONFLICT (id) DO UPDATE
             SET skin_orders = EXCLUDED.skin_orders
-        """, (id, skin_orders))
+        """, (id, skin_orders, name))
         conn.commit()
         
         cursor.execute("""
@@ -331,14 +311,20 @@ if __name__ == "__main__":
 
             if exists:
                 if hour == 0:
-                    # Обновляем только если час = 0
+                    # Обновляем цену и объём, если час = 0 (и дата уже есть)
                     cursor.execute("""
                         UPDATE pricehistory
                         SET price = %s, volume = %s
                         WHERE id = %s AND date = %s
                     """, (price, volume, id, dt))
             else:
-                # Вставляем новую запись
+                # Если записи с такой датой нет
+                if hour == 0:
+                    # Удаляем существующую запись с этой датой, если час = 0
+                    cursor.execute("""
+                        DELETE FROM pricehistory WHERE id = %s AND date::date = %s::date
+                    """, (id, dt))
+                # Вставляем новую запись в любом случае, если даты нет
                 cursor.execute("""
                     INSERT INTO pricehistory (id, date, price, volume)
                     VALUES (%s, %s, %s, %s)
@@ -364,7 +350,7 @@ if __name__ == "__main__":
         """, (id, price, volume, approx_max, approx_min, datetime.now().isoformat()))
         conn.commit()
 
-        decision, order_price, approx_true = analyze_orders_weights(price, skin_orders, None)
+        decision, order_price, approx_true = analyze_orders_weights(price, volume, approx_max, approx_min, skin_orders)
 
         if decision:
             url = generate_market_url(name)
