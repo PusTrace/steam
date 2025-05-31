@@ -27,18 +27,16 @@ def get_orders(skin_id):
             data = response.json()
             
             if data.get("success"):
+                print(f"Получены данные для {skin_id} (get_orders)")
                 return data.get("buy_order_graph")
             else:
                 print(f"Не удалось получить данные для {skin_id}")
                 return None
                 
         except requests.RequestException as e:
-            print(f"Ошибка при запросе к Steam API {e}")
+            print(f"Ошибка при запросе к Steam API (get_orders) {e}")
             time.sleep(10)
             change_ip()
-        except json.JSONDecodeError as e:
-            print(f"Ошибка при разборе JSON {e}")
-            return None
 
 def change_ip():
     """Запрашивает новый IP через Tor"""

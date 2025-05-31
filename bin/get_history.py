@@ -1,13 +1,12 @@
 import requests
-import os
 import urllib3
-import urllib.parse
+import time
 from datetime import datetime, timezone
 
 # Отключаем предупреждения для небезопасных HTTPS-запросов
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def get_history(skin_name, cookie=None):
+def get_history(skin_name, raw_cookies=None):
     base_url = "https://steamcommunity.com/market/pricehistory/"
     params = {
         "appid": 730,
@@ -15,40 +14,42 @@ def get_history(skin_name, cookie=None):
         "currency": 1
     }
     headers = {"User-Agent": "Mozilla/5.0"}
-    cookies = {"steamLoginSecure": os.getenv("STEAM_LOGIN_SECURE")}
+    errors = 0
+    cookies = {cookie["name"]: cookie["value"] for cookie in raw_cookies}
+    while errors < 5:
+        try:
+            response = requests.get(base_url, params=params, headers=headers, cookies=cookies, verify=False)
+            response.raise_for_status()
+            data = response.json()
 
-    try:
-        response = requests.get(base_url, params=params, headers=headers, cookies=cookies, verify=False)
-        response.raise_for_status()
-        data = response.json()
+            if not data.get("success"):
+                print(f"Ответ от сервера без success=True для {skin_name}")
+                return None
 
-        if not data.get("success"):
-            print(f"Ответ от сервера без success=True для {skin_name}")
-            return None
+            parsed_prices = []
+            for entry in data.get("prices", []):
+                raw_date = entry[0]  # "Sep 22 2021 01: +0"
+                raw_price = entry[1]
+                raw_volume = entry[2]
+                try:
+                    clean_date = raw_date.split(" +")[0].strip(":")
+                    dt = datetime.strptime(clean_date, "%b %d %Y %H").replace(tzinfo=timezone.utc)
+                    iso_date = dt.isoformat()
+                    price = float(raw_price)
+                    str_volume = str(raw_volume).replace(",", "").replace(" ", "")
+                    volume = int(str_volume)
+                    parsed_prices.append([iso_date, price, volume])
+                except Exception as e:
+                    print(f"Ошибка парсинга строки: {entry} — {e}")
+                    continue
+            print(f"Получена история цен для {skin_name}")       
+            return parsed_prices
 
-        parsed_prices = []
-        for entry in data.get("prices", []):
-            raw_date = entry[0]  # "Sep 22 2021 01: +0"
-            raw_price = entry[1]
-            raw_volume = entry[2]
-            try:
-                clean_date = raw_date.split(" +")[0].strip(":")
-                dt = datetime.strptime(clean_date, "%b %d %Y %H").replace(tzinfo=timezone.utc)
-                iso_date = dt.isoformat()
-                price = float(raw_price)
-                str_volume = str(raw_volume).replace(",", "").replace(" ", "")
-                volume = int(str_volume)
-                parsed_prices.append([iso_date, price, volume])
-            except Exception as e:
-                print(f"Ошибка парсинга строки: {entry} — {e}")
-                continue
-
-        return parsed_prices
-
-    except requests.exceptions.RequestException as e:
-        print(f"Ошибка при запросе к Steam API: {e}")
-        return None
-
+        except requests.exceptions.RequestException as e:
+            print(f"Ошибка при запросе к Steam API: {e}")
+            time.sleep(10)
+            errors += 1
+        
 def test():
     skin_name = "USP-S | Whiteout (Factory New)"
     history = get_history(skin_name)
