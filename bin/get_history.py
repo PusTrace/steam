@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 # Отключаем предупреждения для небезопасных HTTPS-запросов
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def get_history(skin_name, raw_cookies=None):
+def get_history(skin_name, raw_cookies):
     base_url = "https://steamcommunity.com/market/pricehistory/"
     params = {
         "appid": 730,
@@ -51,7 +51,7 @@ def get_history(skin_name, raw_cookies=None):
             errors += 1
         
 def test():
-    skin_name = "USP-S | Whiteout (Factory New)"
+    skin_name = "USP-S | Black Lotus (Battle-Scarred)"
     history = get_history(skin_name)
     
     if history:
