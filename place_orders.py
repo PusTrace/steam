@@ -9,6 +9,7 @@ from bin.get_order_info import get_orders
 from bin.get_history import get_history
 from bin.utils import generate_market_url
 from bin.steam import authorize_and_get_cookies, buy_skin
+from bin.pt_model import PTModel
 
 def get_market_data(id, name, orders_timestamp, price_timestamp, cursor, item_name_id, cookies):
     # Проверяем, нужно ли брать новые ордера
@@ -366,33 +367,21 @@ def analyze_skin(db: PostgreSQLDB, skin, cookies):
     db.commit()
     return price, volume, approx_max, approx_min, skin_orders, linreg
 
-def buy_analyzed_skin(driver, name, price, volume, approx_max, approx_min, skin_orders, linreg):
-    decision, order_price = analyze_orders_weights(price, volume, approx_max, approx_min, skin_orders, linreg)
-    if decision:
-        print(f"Решение: купить скин {name} (ID: {id}) по цене {order_price:.2f}")
-        url = generate_market_url(name)
-        buy_skin(driver, url, order_price, 1)
-        db.insert_log(id, order_price)
-        db.commit()
-    else:
-        print(f"Решение: не покупать скин {name}, цена {order_price:.2f} ниже порога.")
-
-    time.sleep(3.5)
-    print("Orders placement complete.")
-    driver.quit()
-
 
 if __name__ == "__main__":
     cookies, driver = authorize_and_get_cookies()
 
     db = PostgreSQLDB("localhost", 5432, "steam", "pustrace", os.getenv("DEFAULT_PASSWORD"))
+    model = PTModel("EVA")
     skins = db.get_skins_to_update()
 
     for skin in skins:
         price, volume, approx_max, approx_min, skin_orders, linreg = analyze_skin(db, skin, cookies)
-        print(f"Скин {skin[1]} (ID: {skin[0]}) проанализирован: "
-              f"цена={price}, объём={volume}, approx_max={approx_max}, approx_min={approx_min}, linreg={linreg}")
-        # buy_analyzed_skin(driver, skin, price, volume, approx_max, approx_min, skin_orders, linreg)
+        model.init(price, volume, approx_max, approx_min, skin_orders, linreg)
+        y = model.predict(skin_orders)
+        buy_skin(driver, skin, y)
+        db.insert_log(id, price)
+        db.commit()
 
     driver.quit()
     db.close()

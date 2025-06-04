@@ -62,7 +62,7 @@ def authorize_and_get_cookies():
     load_cookies(driver_headless, cookies)
     return cookies, driver_headless
 
-def buy_skin(driver, url, order_price, weight_number_of_items):
+def buy_skin(driver, url, price, number_of_items):
     wait = WebDriverWait(driver, 10)
     driver.get(url)
     try:
@@ -79,14 +79,14 @@ def buy_skin(driver, url, order_price, weight_number_of_items):
         driver.execute_script("arguments[0].scrollIntoView();", price_for_skin)
         ActionChains(driver).move_to_element(price_for_skin).perform()
         price_for_skin.clear()
-        price_for_skin.send_keys(order_price)
+        price_for_skin.send_keys(price)
         time.sleep(0.5)
         
         item_quantity = wait.until(EC.presence_of_element_located(
             (By.ID, "market_buy_commodity_input_quantity")
         ))
         item_quantity.clear()
-        item_quantity.send_keys(weight_number_of_items)
+        item_quantity.send_keys(number_of_items)
         time.sleep(0.5)
         
         ssa_input = wait.until(EC.presence_of_element_located(
