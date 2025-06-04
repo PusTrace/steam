@@ -281,33 +281,29 @@ class PostgreSQLDB:
         """, (datetime.now().isoformat(), skin_id))
 
     def update_price_history(self, skin_id, price_history):
-        i = 1
+        # Получаем уже существующие даты для этого skin_id
+        self.cursor.execute("""
+            SELECT date FROM pricehistory WHERE skin_id = %s
+        """, (skin_id,))
+        existing_dates = set(row[0] for row in self.cursor.fetchall())
+
+        to_insert = []
+
         for record in price_history:
-            print(f"проход по записи № {i}")
             date_str, price, volume = record
             dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-            hour = dt.hour
 
-            self.cursor.execute("""
-                SELECT 1 FROM pricehistory WHERE skin_id = %s AND date = %s
-            """, (skin_id, dt))
-            exists = self.cursor.fetchone()
+            # Вставляем только если ещё не существует
+            if dt not in existing_dates:
+                to_insert.append((skin_id, dt, price, volume))
 
-            if exists:
-                if hour == 0:
-                    print("обновляем запись с нулевым часом")
-                    self.cursor.execute("""
-                        UPDATE pricehistory
-                        SET price = %s, volume = %s
-                        WHERE skin_id = %s AND date = %s
-                    """, (price, volume, skin_id, dt))
-            else:
-                print("вставляем новую запись в pricehistory")
-                self.cursor.execute("""
-                    INSERT INTO pricehistory (skin_id, date, price, volume)
-                    VALUES (%s, %s, %s, %s)
-                """, (skin_id, dt, price, volume))
-            i += 1
+        # Массовая вставка новых записей
+        if to_insert:
+            self.cursor.executemany("""
+                INSERT INTO pricehistory (skin_id, date, price, volume)
+                VALUES (%s, %s, %s, %s)
+            """, to_insert)
+
 
     def update_skins_analysis(self, id, price, volume, approx_max, approx_min, linreg_change):
         self.cursor.execute("""
@@ -340,10 +336,9 @@ class PostgreSQLDB:
             SELECT id, name, orders_timestamp, price_timestamp, item_name_id
             FROM skins
             WHERE 
-                (DATE(price_timestamp) IS DISTINCT FROM %s OR DATE(orders_timestamp) IS DISTINCT FROM %s)
+                price_timestamp IS NULL
                 AND item_name_id IS NOT NULL
             """,
-            (date.today(), date.today())
         )
         return self.cursor.fetchall()
 
@@ -394,11 +389,10 @@ if __name__ == "__main__":
     skins = db.get_skins_to_update()
 
     for skin in skins:
-        price, volume, approx_max, approx_min, skin_orders, linreg = analyze_skin(db, driver, skin, cookies)
+        price, volume, approx_max, approx_min, skin_orders, linreg = analyze_skin(db, skin, cookies)
         print(f"Скин {skin[1]} (ID: {skin[0]}) проанализирован: "
               f"цена={price}, объём={volume}, approx_max={approx_max}, approx_min={approx_min}, linreg={linreg}")
         # buy_analyzed_skin(driver, skin, price, volume, approx_max, approx_min, skin_orders, linreg)
-        time.sleep(3.5)
 
     driver.quit()
     db.close()
