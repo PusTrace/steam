@@ -1,15 +1,16 @@
-import time
-from datetime import datetime, date, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import os
-import psycopg2
-from psycopg2.extras import Json
 import numpy as np
 
+# database
+from bin.PostgreSQLDB import PostgreSQLDB
+# Models(schemas)
+from bin.pt_model import PTModel
+# small scripts
 from bin.get_order_info import get_orders
 from bin.get_history import get_history
-from bin.utils import generate_market_url
 from bin.steam import authorize_and_get_cookies, buy_skin
-from bin.pt_model import PTModel
+
 
 def get_market_data(id, name, orders_timestamp, price_timestamp, cursor, item_name_id, cookies):
     # Проверяем, нужно ли брать новые ордера
@@ -35,121 +36,7 @@ def get_market_data(id, name, orders_timestamp, price_timestamp, cursor, item_na
     return item_price, item_orders  # Успешно получили данные — возвращаем
 
 
-def analyze_orders_weights(
-    price: float,
-    volume: float,
-    approx_max: float,
-    approx_min: float,
-    skin_orders,
-    linreg_change_next_month: float,
-    max_multiplier: float = 2.0
-):
-    """
-    Рассчитывает нижний и верхний пороги (threshold_down, threshold_up) с учётом:
-      1. Дефолтных коэффициентов: 0.76 (нижний) и 0.86 (верхний).
-      2. Истории (linreg_change_next_month) в процентах: оба коэффициента смещаются на линрег.
-      3. Приближения (approx_max / approx_min), когда цена ближе к approx_max:
-         - Вычисляем вес приближения (approx_weight) в диапазоне [0..1].
-         - Добавляем небольшой сдвиг (epsilon) умноженный на этот вес к обоим коэффициентам.
-      4. Гарантируем, что оба коэффициента ≥ 0 и ≤ 1 * max_multiplier (чтобы не выйти за разумные пределы).
-
-    После этого проходит фильтрацию заявок (skin_orders), ищет «стенку» и возвращает:
-      - False, None, False — если стена не найдена или объём слишком большой.
-      - True, candidate_price, approx_true — если найдена «стена» (candidate_price > threshold_down).
-    """
-
-    # 1) Базовые коэффициенты (дефолтные «стенки»)
-    base_low_coef = 0.76
-    base_high_coef = 0.86
-
-    # 2) Применяем историю (linreg_change_next_month может быть отрицательной или положительной)
-    low_coef = base_low_coef + linreg_change_next_month/2
-    high_coef = base_high_coef + linreg_change_next_month/2
-
-
-    # 4) Проверяем приближение: учитываем, только если price ближе к approx_max, чем к approx_min
-    if approx_max is not None and approx_min is not None and approx_max != approx_min:
-        dist_to_max = abs(approx_max - price)
-        dist_to_min = abs(approx_min - price)
-
-        if dist_to_max < dist_to_min:
-            total_span = abs(approx_max - approx_min)
-            raw_weight = 1.0 - (dist_to_max / total_span)  # в [0..1], где 1 — цена ровно = approx_max
-            approx_weight = max(0.0, min(1.0, raw_weight))
-
-            # Небольшой сдвиг: допустим, ε = 0.02 (2%)
-            epsilon = 0.02
-            shift = approx_weight * epsilon
-
-            low_coef += shift
-            high_coef += shift
-
-
-    # 6) Переводим коэффициенты в абсолютные цены-пороги
-    threshold_down = price * low_coef
-    threshold_up = price * high_coef
-
-
-    base_wall_qty_threshold = volume * 0.1
-
-    # Быстрая проверка: если есть крупный объём внутри «стенки» — сразу бьём в отказ
-    fast_check_volume = 0.0
-    for i in range(len(skin_orders) - 1):
-        price_high = skin_orders[i][0]
-        price_low = skin_orders[i + 1][0]
-        if price_high > threshold_up > price_low:
-            fast_check_volume = skin_orders[i + 1][1]
-            break  # достаточно найти один такой уровень
-    if fast_check_volume > (volume * 1.2) / 7:
-        return False, None
-    else:
-        # Преобразуем агрегированные количества в «эффективные» (effective_qty)
-        effective_orders = []
-        for i, order in enumerate(skin_orders):
-            price_level, aggregated_qty, useless_information = order
-            if i == 0:
-                effective_qty = aggregated_qty
-            else:
-                effective_qty = aggregated_qty - skin_orders[i - 1][1]
-            effective_orders.append((price_level, effective_qty))
-
-        # Фильтруем только те уровни, что внутри [threshold_down, threshold_up]
-        filtered_orders = [
-            (p, q) for p, q in effective_orders
-            if threshold_down < p <= threshold_up
-        ]
-        filtered_orders.sort(key=lambda x: x[0])
-
-        candidate_price = round(threshold_down, 2)
-
-        for price_level, effective_qty in filtered_orders:
-            if price_level <= candidate_price:
-                print(f"{price_level:.2f} <= {candidate_price:.2f}, пропускаем.")
-                continue
-
-            # Расчитываем динамический порог для объёма «стены»
-            multiplier = 1 + (max_multiplier - 1) * ((price_level - threshold_down) / (threshold_up - threshold_down))
-            dynamic_threshold = base_wall_qty_threshold * multiplier
-
-            if effective_qty >= dynamic_threshold:
-                candidate_price = price_level + 0.1
-                print(
-                    f"Ордер на {price_level:.2f} (qty={effective_qty:.2f}) прошёл порог "
-                    f"{dynamic_threshold:.2f}. Новая candidate_price = {candidate_price:.2f}"
-                )
-            else:
-                print(
-                    f"Ордер на {price_level:.2f} (qty={effective_qty:.2f}) не прошёл порог "
-                    f"{dynamic_threshold:.2f}."
-                )
-
-        if candidate_price >= threshold_up:
-            return False, None
-
-        return True, candidate_price
-
-
-def analyze_metrix(history):
+def Preliminary_analysis_of_metrics(history):
     """
     history: список записей вида [date_iso, price, volume], где
              date_iso — ISO-строка в UTC ("YYYY-MM-DDTHH:MM:SSZ" или с +00:00).
@@ -248,104 +135,9 @@ def analyze_metrix(history):
     return avg_price_week, volume, approx_max, approx_min, float(percent_change_next_month)
     
 
-class PostgreSQLDB:
-    def __init__(self, host, port, dbname, user, password):
-        self.conn = psycopg2.connect(
-            host=host,
-            port=port,
-            dbname=dbname,
-            user=user,
-            password=password
-        )
-        self.cursor = self.conn.cursor()
-
-    def insert_or_update_orders(self, skin_id, skin_orders):
-        self.cursor.execute("""
-            INSERT INTO orders (skin_id, data)
-            VALUES (%s, %s)
-            ON CONFLICT (skin_id) DO UPDATE
-            SET data = EXCLUDED.data
-        """, (skin_id, Json(skin_orders)))
-
-    def update_skin_orders_timestamp(self, skin_id):
-        self.cursor.execute("""
-            UPDATE skins
-            SET orders_timestamp = %s
-            WHERE id = %s
-        """, (datetime.now().isoformat(), skin_id))
-
-    def update_skin_price_timestamp(self, skin_id):
-        self.cursor.execute("""
-            UPDATE skins
-            SET price_timestamp = %s
-            WHERE id = %s
-        """, (datetime.now().isoformat(), skin_id))
-
-    def update_price_history(self, skin_id, price_history):
-        # Получаем уже существующие даты для этого skin_id
-        self.cursor.execute("""
-            SELECT date FROM pricehistory WHERE skin_id = %s
-        """, (skin_id,))
-        existing_dates = set(row[0] for row in self.cursor.fetchall())
-
-        to_insert = []
-
-        for record in price_history:
-            date_str, price, volume = record
-            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-
-            # Вставляем только если ещё не существует
-            if dt not in existing_dates:
-                to_insert.append((skin_id, dt, price, volume))
-
-        # Массовая вставка новых записей
-        if to_insert:
-            self.cursor.executemany("""
-                INSERT INTO pricehistory (skin_id, date, price, volume)
-                VALUES (%s, %s, %s, %s)
-            """, to_insert)
 
 
-    def update_skins_analysis(self, id, price, volume, approx_max, approx_min, linreg_change):
-        self.cursor.execute("""
-            UPDATE skins
-            SET price = %s,
-                volume = %s,
-                approx_max = %s,
-                approx_min = %s,
-                analysis_timestamp = %s,
-                linreg_change_next_month = %s
-            WHERE id = %s
-        """, (price, volume, approx_max, approx_min, datetime.now().isoformat(), linreg_change, id))
-
-    def insert_log(self, skin_id, price):
-        self.cursor.execute("""
-            INSERT INTO logs (skin_id, event_type, event_time, price, quantity)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (skin_id, "buy", datetime.now().isoformat(), price, 1))
-
-    def commit(self):
-        self.conn.commit()
-
-    def close(self):
-        self.cursor.close()
-        self.conn.close()
-        
-    def get_skins_to_update(self):
-        self.cursor.execute(
-            """
-            SELECT id, name, orders_timestamp, price_timestamp, item_name_id
-            FROM skins
-            WHERE 
-                price_timestamp IS NULL
-                AND item_name_id IS NOT NULL
-            """,
-        )
-        return self.cursor.fetchall()
-
-
-
-def analyze_skin(db: PostgreSQLDB, skin, cookies):
+def update_data(db: PostgreSQLDB, skin, cookies):
     id, name, orders_ts, price_ts, item_name_id = skin
     print(f"Обработка скина: {name} (ID: {id})")
 
@@ -362,7 +154,7 @@ def analyze_skin(db: PostgreSQLDB, skin, cookies):
     db.commit()
 
     print("Анализируем предмет и считаем метрики...")
-    price, volume, approx_max, approx_min, linreg = analyze_metrix(price_history)
+    price, volume, approx_max, approx_min, linreg = Preliminary_analysis_of_metrics(price_history)
     db.update_skins_analysis(id, price, volume, approx_max, approx_min, linreg)
     db.commit()
     return price, volume, approx_max, approx_min, skin_orders, linreg
@@ -376,12 +168,17 @@ if __name__ == "__main__":
     skins = db.get_skins_to_update()
 
     for skin in skins:
-        price, volume, approx_max, approx_min, skin_orders, linreg = analyze_skin(db, skin, cookies)
-        model.init(price, volume, approx_max, approx_min, skin_orders, linreg)
-        y = model.predict(skin_orders)
-        buy_skin(driver, skin, y)
-        db.insert_log(id, price)
-        db.commit()
+        # get & update data in db
+        price, volume, approx_max, approx_min, skin_orders, linreg = update_data(db, skin, cookies)
+
+        # model prediction
+        y, amount, profit = model.predict(price, volume, approx_max, approx_min, skin_orders, linreg)
+
+        # buy and log if y is not none
+        if y is not None:
+            buy_skin(driver, skin, y, amount)
+            db.insert_log(id, price)
+            db.commit()
 
     driver.quit()
     db.close()
