@@ -85,14 +85,19 @@ class PostgreSQLDB:
         self.cursor.close()
         self.conn.close()
         
-    def get_skins_to_update(self):
+    def get_filtred_skins(self):
         self.cursor.execute(
             """
-            SELECT id, name, orders_timestamp, price_timestamp, item_name_id
+            SELECT *
             FROM skins
             WHERE 
-                price_timestamp IS NULL
+                price < 1500
+                AND price > 20
+                AND volume > 10
+                AND price_timestamp IS NOT NULL
                 AND item_name_id IS NOT NULL
+                AND orders_timestamp IS NOT NULL
+                AND linreg_change_next_month > 0
             """,
         )
         return self.cursor.fetchall()

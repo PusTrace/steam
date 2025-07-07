@@ -52,7 +52,8 @@ def get_history(skin_name, raw_cookies):
         
 def test():
     skin_name = "USP-S | Black Lotus (Battle-Scarred)"
-    history = get_history(skin_name)
+    raw_cookies = 0
+    history = get_history(skin_name, raw_cookies)
     
     if history:
         print(f"Получена история цен для {skin_name}:")

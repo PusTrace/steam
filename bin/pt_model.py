@@ -15,6 +15,8 @@ class EVA(BaseStrategy):
         amount = 1
 
         return y, amount, predict_profit
+    
+    
 class PTModel:
     def __init__(self, model_type: str):
         strategies = {

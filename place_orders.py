@@ -4,7 +4,7 @@ import numpy as np
 
 # database
 from bin.PostgreSQLDB import PostgreSQLDB
-# Models(schemas)
+# Models
 from bin.pt_model import PTModel
 # small scripts
 from bin.get_order_info import get_orders
@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
     db = PostgreSQLDB("localhost", 5432, "steam", "pustrace", os.getenv("DEFAULT_PASSWORD"))
     model = PTModel("EVA")
-    skins = db.get_skins_to_update()
+    skins = db.get_filtred_skins()
 
     for skin in skins:
         # get & update data in db
