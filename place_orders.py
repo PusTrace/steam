@@ -163,7 +163,7 @@ def update_data(db: PostgreSQLDB, skin, cookies):
 if __name__ == "__main__":
     cookies, driver = authorize_and_get_cookies()
 
-    db = PostgreSQLDB("localhost", 5432, "steam", "pustrace", os.getenv("DEFAULT_PASSWORD"))
+    db = PostgreSQLDB("127.0.0.1", 5432, "steam", "pustrace", os.getenv("DEFAULT_PASSWORD"))
     model = PTModel("EVA")
     skins = db.get_filtred_skins()
 

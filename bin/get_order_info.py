@@ -1,9 +1,6 @@
 import requests
-import json
 import time
-import stem.control
-from stem import Signal
-import os
+
 
 def get_orders(skin_id):
     params = {
@@ -21,7 +18,7 @@ def get_orders(skin_id):
     }
     while True:
         try:
-            response = requests.get("https://steamcommunity.com/market/itemordershistogram", params=params, headers=headers, proxies={"http": "socks5h://127.0.0.1:9050", "https": "socks5h://127.0.0.1:9050"})
+            response = requests.get("https://steamcommunity.com/market/itemordershistogram", params=params, headers=headers)
             response.raise_for_status()
             
             data = response.json()
@@ -35,17 +32,8 @@ def get_orders(skin_id):
                 
         except requests.RequestException as e:
             print(f"Ошибка при запросе к Steam API (get_orders) {e}")
-            time.sleep(10)
-            change_ip()
+            time.sleep(30)
 
-def change_ip():
-    """Запрашивает новый IP через Tor"""
-    try:
-        with stem.control.Controller.from_port(port=9051) as controller:
-            controller.authenticate(password=os.getenv("TOR_NET"))
-            controller.signal(Signal.NEWNYM)  # Запрос смены IP
-    except Exception as e:
-        print(f"Ошибка смены IP: {e}")
         
 def test():
     skin_id = 176262659  # Замените на реальный ID скина
