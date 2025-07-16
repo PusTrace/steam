@@ -9,6 +9,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
 import time
+import os
+import pickle
+import urllib.parse
 
 def steam_login(driver):
     login_url = "https://steamcommunity.com/login/home/"
@@ -53,17 +56,51 @@ def load_cookies(driver, cookies):
         driver.add_cookie(cookie)
     driver.refresh()
     
+def save_cookies_with_timestamp(cookies):
+    data = {
+        "timestamp": time.time(),
+        "cookies": cookies
+    }
+    with open("steam_cookies.pkl", "wb") as f:
+        pickle.dump(data, f)
+
+def load_cookies_if_fresh():
+    if not os.path.exists("steam_cookies.pkl"):
+        return None
+    with open("steam_cookies.pkl", "rb") as f:
+        data = pickle.load(f)
+    timestamp = data.get("timestamp", 0)
+    if time.time() - timestamp < 24 * 3600:
+        return data["cookies"]
+    return None
+
 def authorize_and_get_cookies():
+    # Проверяем: если есть свежие куки — просто загружаем
+    cached_cookies = load_cookies_if_fresh()
+    if cached_cookies:
+        print("[INFO] Загружаем куки из кэша")
+        driver_headless = setup_driver(headless=True)
+        load_cookies(driver_headless, cached_cookies)
+        return cached_cookies, driver_headless
+
+    # Иначе авторизуемся
+    print("[INFO] Авторизация в Steam...")
     driver_normal = setup_driver(headless=False)
     steam_login(driver_normal)
     cookies = driver_normal.get_cookies()
     driver_normal.quit()
+
+    # Сохраняем куки с меткой времени
+    save_cookies_with_timestamp(cookies)
+
+    # Загружаем в headless-драйвер
     driver_headless = setup_driver(headless=True)
     load_cookies(driver_headless, cookies)
     return cookies, driver_headless
 
-def buy_skin(driver, url, price, number_of_items):
+def buy_skin(driver, skin, y, number_of_items):
     wait = WebDriverWait(driver, 10)
+    url = generate_steam_market_url(skin)
     driver.get(url)
     try:
         btn_place_order = wait.until(EC.presence_of_element_located(
@@ -79,7 +116,7 @@ def buy_skin(driver, url, price, number_of_items):
         driver.execute_script("arguments[0].scrollIntoView();", price_for_skin)
         ActionChains(driver).move_to_element(price_for_skin).perform()
         price_for_skin.clear()
-        price_for_skin.send_keys(price)
+        price_for_skin.send_keys(y)
         time.sleep(0.5)
         
         item_quantity = wait.until(EC.presence_of_element_located(
@@ -107,3 +144,8 @@ def buy_skin(driver, url, price, number_of_items):
     except Exception as e:
         print("Ошибка:", e)
         driver.quit()
+        
+def generate_steam_market_url(item_name: str) -> str:
+    base_url = "https://steamcommunity.com/market/listings/730/"
+    encoded_name = urllib.parse.quote(item_name)
+    return base_url + encoded_name

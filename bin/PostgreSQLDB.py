@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extras import Json
-from datetime import datetime
+from datetime import datetime, timezone
 
 class PostgreSQLDB:
     def __init__(self, host, port, dbname, user, password):
@@ -45,9 +45,8 @@ class PostgreSQLDB:
         to_insert = []
 
         for record in price_history:
-            date_str, price, volume = record
-            dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-
+            raw_date, price, volume = record
+            dt = normalize_date(raw_date)
             # Вставляем только если ещё не существует
             if dt not in existing_dates:
                 to_insert.append((skin_id, dt, price, volume))
@@ -72,11 +71,11 @@ class PostgreSQLDB:
             WHERE id = %s
         """, (price, volume, approx_max, approx_min, datetime.now().isoformat(), linreg_change, id))
 
-    def insert_log(self, skin_id, price):
+    def insert_log(self, skin_id, price, amount, profit, model_type):
         self.cursor.execute("""
-            INSERT INTO logs (skin_id, event_type, event_time, price, quantity)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (skin_id, "buy", datetime.now().isoformat(), price, 1))
+            INSERT INTO logs (skin_id, event_type, event_time, price, quantity, profit, model_type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (skin_id, "placement", datetime.now().isoformat(), price, amount, profit, model_type))
 
     def commit(self):
         self.conn.commit()
@@ -88,7 +87,7 @@ class PostgreSQLDB:
     def get_filtred_skins(self):
         self.cursor.execute(
             """
-            SELECT *
+            SELECT id, name, orders_timestamp, price_timestamp, item_name_id
             FROM skins
             WHERE 
                 price < 1500
@@ -101,3 +100,17 @@ class PostgreSQLDB:
             """,
         )
         return self.cursor.fetchall()
+    
+def normalize_date(raw_date):
+    """Преобразует ISO-дату в UTC-aware datetime."""
+    try:
+        dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
+    except ValueError:
+        dt = datetime.fromisoformat(raw_date)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+
+    return dt

@@ -22,9 +22,10 @@ def get_history(skin_name, raw_cookies):
             response.raise_for_status()
             data = response.json()
 
-            if not data.get("success"):
-                print(f"Ответ от сервера без success=True для {skin_name}")
+            if not data.get("success") or not data.get("prices"):
+                print(f"Нет данных по цене для {skin_name}")
                 return None
+
 
             parsed_prices = []
             for entry in data.get("prices", []):
@@ -32,7 +33,7 @@ def get_history(skin_name, raw_cookies):
                 raw_price = entry[1]
                 raw_volume = entry[2]
                 try:
-                    clean_date = raw_date.split(" +")[0].strip(":")
+                    clean_date = raw_date.split(" +")[0]
                     dt = datetime.strptime(clean_date, "%b %d %Y %H").replace(tzinfo=timezone.utc)
                     iso_date = dt.isoformat()
                     price = float(raw_price)
