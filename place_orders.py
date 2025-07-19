@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import os
 import numpy as np
+from dotenv import load_dotenv
 
 # database
 from bin.PostgreSQLDB import PostgreSQLDB
@@ -10,21 +11,7 @@ from bin.pt_model import PTModel
 from bin.get_order_info import get_orders
 from bin.get_history import get_history
 from bin.steam import authorize_and_get_cookies, buy_skin
-
-
-def normalize_date(raw_date):
-    """Преобразует ISO-дату в UTC-aware datetime."""
-    try:
-        dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
-    except ValueError:
-        dt = datetime.fromisoformat(raw_date)
-
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-
-    return dt
+from bin.utils import normalize_date
 
 def get_market_data(skin, cursor, cookies):
     id, name, orders_timestamp, price_timestamp, item_name_id = skin
@@ -49,49 +36,46 @@ def get_market_data(skin, cursor, cookies):
         print(f"Используем цены базы данных для {name} (ID: {id})")
         cursor.execute("SELECT date, price, volume FROM pricehistory WHERE skin_id = %s", (id,))
         item_price = cursor.fetchall()
+        item_price = [[normalize_date(row[0]), row[1], row[2]] for row in item_price]
 
     return item_price, item_orders  # Успешно получили данные — возвращаем
 
 
 def Preliminary_analysis_of_metrics(history):
     """
-    history: список записей вида [date_iso, price, volume], где
-             date_iso — ISO-строка в UTC ("YYYY-MM-DDTHH:MM:SSZ" или с +00:00).
+    history: список записей вида [datetime, price, volume], где
+             datetime — объект datetime в UTC.
     """
+
+    if not history:
+        return 0, 0, 0, 0, None
+
+    history.sort(key=lambda r: r[0])
 
     now = datetime.now(timezone.utc)
     one_week_ago = now - timedelta(days=7)
     six_month_ago = now - timedelta(days=180)
 
-    # Переменные для анализа за неделю
     total_price = 0.0
     volume = 0
     count = 0
     last_week_records = []
 
-    # Переменные для годовой регрессии
     ts_list = []
     price_list = []
-    dates_all = []
+    prices_latest_day = []
+    latest_date = None
 
     for record in history:
-        raw_date = record[0]
+        dt = normalize_date(record[0])
         price_i = record[1]
         volume_i = record[2]
 
-        # Преобразуем дату в UTC-aware datetime
-        try:
-            dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
-        except ValueError:
-            dt = datetime.fromisoformat(raw_date)
-
-        # Приводим всё к UTC
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        else:
-            dt = dt.astimezone(timezone.utc)
-
-        dates_all.append(dt.date())
+        if latest_date is None or dt.date() > latest_date:
+            latest_date = dt.date()
+            prices_latest_day = [price_i]
+        elif dt.date() == latest_date:
+            prices_latest_day.append(price_i)
 
         if dt >= one_week_ago:
             total_price += price_i
@@ -104,7 +88,6 @@ def Preliminary_analysis_of_metrics(history):
             ts_list.append(ts)
             price_list.append(price_i)
 
-    # --- Расчёты за неделю ---
     avg_price_week = total_price / count if count else 0
 
     sorted_by_price = sorted(last_week_records, key=lambda x: x[1])
@@ -114,42 +97,20 @@ def Preliminary_analysis_of_metrics(history):
     most_expensive = sorted_by_price[-3:] if len(sorted_by_price) >= 3 else sorted_by_price
     approx_max = sum(r[1] for r in most_expensive) / len(most_expensive) if most_expensive else 0
 
-    if len(ts_list) < 2:
+    if len(ts_list) < 2 or not prices_latest_day:
         return avg_price_week, volume, approx_max, approx_min, None
 
     x = np.array(ts_list)
     y = np.array(price_list)
     a, b = np.polyfit(x, y, deg=1)
 
-    latest_date = max(dates_all)
-    prices_latest_day = []
-
-    for record in history:
-        raw_date = record[0]
-        price_i = record[1]
-        try:
-            dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
-        except ValueError:
-            dt = datetime.fromisoformat(raw_date)
-
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        else:
-            dt = dt.astimezone(timezone.utc)
-
-        if dt.date() == latest_date:
-            prices_latest_day.append(price_i)
-
-    if not prices_latest_day:
-        return avg_price_week, volume, approx_max, approx_min, None
-
     current_price = sum(prices_latest_day) / len(prices_latest_day)
-
     ts_next_month = (now + timedelta(days=30)).timestamp()
     predicted_price_next = a * ts_next_month + b
     percent_change_next_month = ((predicted_price_next - current_price) / current_price) * 100
 
     return avg_price_week, volume, approx_max, approx_min, float(percent_change_next_month)
+
 
 def update_data(db: PostgreSQLDB, skin, cookies):
     price_history, skin_orders = get_market_data(skin, db.cursor, cookies)
@@ -172,9 +133,11 @@ def update_data(db: PostgreSQLDB, skin, cookies):
 if __name__ == "__main__":
     model_type = "EVA"
     cookies, driver = authorize_and_get_cookies()
+    load_dotenv()
 
-    db = PostgreSQLDB("127.0.0.1", 5432, "steam", "pustrace", os.getenv("DEFAULT_PASSWORD"))
+    db = PostgreSQLDB("127.0.0.1", 5432, "steam", "postgres", os.getenv("DEFAULT_PASSWORD"))
     model = PTModel(model_type)
+
     skins = db.get_filtred_skins()
 
     for skin in skins:

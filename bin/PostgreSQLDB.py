@@ -1,6 +1,7 @@
 import psycopg2
 from psycopg2.extras import Json
-from datetime import datetime, timezone
+from datetime import datetime
+from bin.utils import normalize_date
 
 class PostgreSQLDB:
     def __init__(self, host, port, dbname, user, password):
@@ -67,7 +68,7 @@ class PostgreSQLDB:
                 approx_max = %s,
                 approx_min = %s,
                 analysis_timestamp = %s,
-                linreg_change_next_month = %s
+                linreg = %s
             WHERE id = %s
         """, (price, volume, approx_max, approx_min, datetime.now().isoformat(), linreg_change, id))
 
@@ -93,24 +94,9 @@ class PostgreSQLDB:
                 price < 1500
                 AND price > 20
                 AND volume > 10
-                AND price_timestamp IS NOT NULL
                 AND item_name_id IS NOT NULL
-                AND orders_timestamp IS NOT NULL
-                AND linreg_change_next_month > 0
+                AND linreg > 0
             """,
         )
         return self.cursor.fetchall()
     
-def normalize_date(raw_date):
-    """Преобразует ISO-дату в UTC-aware datetime."""
-    try:
-        dt = datetime.fromisoformat(raw_date.replace('Z', '+00:00'))
-    except ValueError:
-        dt = datetime.fromisoformat(raw_date)
-
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-
-    return dt

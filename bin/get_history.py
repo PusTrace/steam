@@ -2,7 +2,7 @@ import requests
 import urllib3
 import time
 from datetime import datetime, timezone
-
+from bin.utils import normalize_date
 # Отключаем предупреждения для небезопасных HTTPS-запросов
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -33,13 +33,16 @@ def get_history(skin_name, raw_cookies):
                 raw_price = entry[1]
                 raw_volume = entry[2]
                 try:
-                    clean_date = raw_date.split(" +")[0]
-                    dt = datetime.strptime(clean_date, "%b %d %Y %H").replace(tzinfo=timezone.utc)
-                    iso_date = dt.isoformat()
+                    clean_date = raw_date.split(":")[0]
+                    dt = datetime.strptime(clean_date, "%b %d %Y %H")
+                    dt = dt.replace(tzinfo=timezone.utc)
+                    dt = normalize_date(dt)
+
                     price = float(raw_price)
                     str_volume = str(raw_volume).replace(",", "").replace(" ", "")
                     volume = int(str_volume)
-                    parsed_prices.append([iso_date, price, volume])
+                    
+                    parsed_prices.append([dt, price, volume])
                 except Exception as e:
                     print(f"Ошибка парсинга строки: {entry} — {e}")
                     continue
