@@ -27,10 +27,10 @@ class EVA(BaseStrategy):
                     threshold_down = price * 0.70  # запасной вариант
             else:
                 print("[EVA] объём верхнего порога слишком велик, пропускаем")
-                return None, None, None
+                return None, None, None, None
         else:
             print("[EVA] Нет ордеров ниже верхнего порога(ошибка)")
-            return None, None, None
+            return None, None, None, None
 
         # === Поиск стенок в диапазоне ===
         orders_in_range = [o for o in skin_orders if threshold_down <= o[0] <= threshold_top]
@@ -54,9 +54,11 @@ class EVA(BaseStrategy):
             y = threshold_down
             print("[EVA] Стенок не найдено — используем threshold_down")
 
+        volume_before_y = next(order[1] for order in skin_orders if order[0] < y)
+
         predict_price = price * (100 + linreg)/100
         predicted_profit = predict_price - price
-        return round(y, 2), amount, round(predicted_profit, 2)
+        return round(y, 2), amount, round(predicted_profit, 2), volume_before_y
 
 
 
@@ -78,7 +80,7 @@ class PTModel:
 
 def test_eva():
     # ==== Входные данные ====
-    price = 1387.16
+    price = 1377.16
     volume = 300
     linreg = 2.6692650
 
@@ -593,7 +595,7 @@ def test_eva():
 
     # ==== Тест ====
     model = PTModel("EVA")
-    y, amount, profit = model.predict(
+    y, amount, profit, buy_volume = model.predict(
             price=price,
             volume=volume,
             skin_orders=skin_orders,
@@ -604,6 +606,7 @@ def test_eva():
     print(f"y = {y}")
     print(f"amount = {amount}")
     print(f"predict_profit = {profit}")
+    print(f"buy volume = {buy_volume}")
 
 if __name__ == "__main__":
     test_eva()

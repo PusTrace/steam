@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2.extras import Json
 from datetime import datetime
-from bin.utils import normalize_date
+from utils import normalize_date
 
 class PostgreSQLDB:
     def __init__(self, host, port, dbname, user, password):
@@ -72,11 +72,11 @@ class PostgreSQLDB:
             WHERE id = %s
         """, (price, volume, approx_max, approx_min, datetime.now().isoformat(), linreg_change, id))
 
-    def insert_log(self, skin_id, price, amount, profit, model_type):
+    def log_placement(self, skin_id, price, amount, profit, model_type, placed_snapshot):
         self.cursor.execute("""
-            INSERT INTO logs (skin_id, event_type, event_time, price, quantity, profit, model_type)
+            INSERT INTO logs (skin_id, placed_time, price, quantity, profit, model_type, placed_snapshot)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (skin_id, "placement", datetime.now().isoformat(), price, amount, profit, model_type))
+        """, (skin_id, datetime.now().isoformat(), price, amount, profit, model_type, Json(placed_snapshot)))
 
     def commit(self):
         self.conn.commit()
