@@ -4,7 +4,14 @@ from datetime import datetime
 from utils import normalize_date
 
 class PostgreSQLDB:
-    def __init__(self, host, port, dbname, user, password):
+    def __init__(
+        self,
+        host="127.0.0.1",
+        port=5432,
+        dbname="steam",
+        user="postgres",
+        password="DEFAULT_PASSWORD"
+    ):
         self.conn = psycopg2.connect(
             host=host,
             port=port,
@@ -13,6 +20,7 @@ class PostgreSQLDB:
             password=password
         )
         self.cursor = self.conn.cursor()
+
 
     def insert_or_update_orders(self, skin_id, skin_orders):
         self.cursor.execute("""
@@ -60,17 +68,20 @@ class PostgreSQLDB:
             """, to_insert)
 
 
-    def update_skins_analysis(self, id, price, volume, approx_max, approx_min, linreg_change):
+    def update_skins_analysis(self, id, moment_price, volume, high_approx, low_approx, slope_six_m, slope_one_m, avg_month_price, avg_week_price):
         self.cursor.execute("""
             UPDATE skins
-            SET price = %s,
+            SET moment_price = %s,
                 volume = %s,
-                approx_max = %s,
-                approx_min = %s,
+                high_approx = %s,
+                low_approx = %s,
                 analysis_timestamp = %s,
-                linreg = %s
+                linreg_6m = %s
+                linreg_1m = %s
+                avg_month_price = %s,
+                avg_week_price = %s
             WHERE id = %s
-        """, (price, volume, approx_max, approx_min, datetime.now().isoformat(), linreg_change, id))
+        """, (moment_price, volume, high_approx, low_approx, datetime.now().isoformat(), slope_six_m, slope_one_m,avg_month_price, avg_week_price, id))
 
     def log_placement(self, skin_id, price, amount, profit, model_type, placed_snapshot):
         self.cursor.execute("""

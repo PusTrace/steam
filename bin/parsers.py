@@ -1,11 +1,14 @@
 import requests
 import time
 import requests
-import urllib3
 import time
 from datetime import datetime, timezone
 import random
-from bin.utils import normalize_date
+import os
+from dotenv import load_dotenv
+from utils import normalize_date
+from steam import authorize_and_get_cookies
+from PostgreSQLDB import PostgreSQLDB
 
 def get_orders(skin_id):
     params = {
@@ -88,10 +91,15 @@ def get_history(skin_name, raw_cookies):
             errors += 1
         
 def test_history():
-    skin_name = "USP-S | Black Lotus (Battle-Scarred)"
-    raw_cookies = 0
-    history = get_history(skin_name, raw_cookies)
+    load_dotenv()
+    skin_name = "StatTrak™ USP-S | Black Lotus (Battle-Scarred)"
+    cookies, driver = authorize_and_get_cookies()
+    history = get_history(skin_name, cookies)
     
+    db = PostgreSQLDB(password=os.getenv("DEFAULT_PASSWORD"))
+    db.update_price_history(245, history)
+    db.commit()
+
     if history:
         print(f"Получена история цен для {skin_name}:")
         for entry in history:
@@ -100,10 +108,9 @@ def test_history():
         print(f"Последняя запись: {history[-1]}")
     else:
         print(f"Не удалось получить историю цен для {skin_name}")
-
-if __name__ == "__main__":
-    test_history()
-
+        
+    driver.quit()
+    db.close()
         
 def test_orders():
     skin_id = 176262659  # Замените на реальный ID скина
@@ -113,5 +120,6 @@ def test_orders():
         print(f"Получены ордера для скина {skin_id}: {orders}")
     else:
         print(f"Не удалось получить ордера для скина {skin_id}")
+
 if __name__ == "__main__":
-    test_orders()
+    test_history()

@@ -7,64 +7,99 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 class HistoryAnalyzer:
-    def __init__(self, history):
+    def __init__(self, history, debug=False):
         """
         history: список записей [datetime, price, volume]
         """
         self.history = sorted(history, key=lambda r: r[0])
+        self.moment_price = self.history[-1][1]
+        self.aggregate_daily()
+        if debug:
+            self.raw_history = list(self.history)  # сохраняем исходную историю для отладки
 
         self.now = datetime.now(timezone.utc)
         self.one_week_ago = self.now - timedelta(days=7)
         self.one_month_ago = self.now - timedelta(days=30)
         self.six_month_ago = self.now - timedelta(days=180)
 
-    def summary(self):
+    def calc_avg(self):
         week_prices = []
         month_prices = []
-        week_volumes = []
 
-        for dt, price, volume in self.history:
+        for dt, price, v in self.history:
             if dt >= self.one_week_ago:
                 week_prices.append(price)
-                week_volumes.append(volume)
             if dt >= self.one_month_ago:
                 month_prices.append(price)
 
         avg_week_price = sum(week_prices) / len(week_prices) if week_prices else None
         avg_month_price = sum(month_prices) / len(month_prices) if month_prices else None
-        total_week_volume = sum(week_volumes) if week_volumes else None
+        
+        return avg_month_price, avg_week_price
 
-        # Аппрокс. высокая и низкая цены за неделю
-        sorted_week = sorted(week_prices)
-        high_approx = sum(sorted_week[-5:]) / min(5, len(sorted_week)) if sorted_week else None
-        low_approx = sum(sorted_week[:5]) / min(5, len(sorted_week)) if sorted_week else None
-
-        return avg_month_price, avg_week_price, total_week_volume, high_approx, low_approx
-
-
-    def remove_price_outliers_iqr(self, factor=0.2):
+    def bef_cleaning_summary(self):
         """
-        Удаляет глобальные аномалии цен на основе IQR.
-        factor - множитель, обычно 1.5
+        Возвращает аппрокс. высокую и низкую цену за неделю.
+        """
+        month_prices = []
+        week_volumes = []
+
+        for dt, price, volume in self.history:
+            if dt >= self.one_week_ago:
+                week_volumes.append(volume)
+            if dt >= self.one_month_ago:
+                month_prices.append(price)
+
+        volume = sum(week_volumes) if week_volumes else None
+
+        sorted_month = sorted(month_prices)
+        high_approx = sum(sorted_month[-3:]) / min(3, len(sorted_month)) if sorted_month else None
+        low_approx = sum(sorted_month[:3]) / min(3, len(sorted_month)) if sorted_month else None
+        
+
+        return high_approx, low_approx, volume, self.moment_price
+
+    def remove_price_outliers_iqr(self, factor=1.5, debug=False):
+        """
+        Удаляет выбросы внутри каждого месяца по IQR.
+        factor — множитель чувствительности IQR (обычно 1.5)
         """
         if not self.history:
             return
-        
 
-        prices = np.array([rec[1] for rec in self.history])
-        q1 = np.percentile(prices, 25)
-        q3 = np.percentile(prices, 75)
-        iqr = q3 - q1
+        # Группировка по (год, месяц)
+        monthly_groups = defaultdict(list)
+        for rec in self.history:
+            dt = rec[0]  # datetime
+            key = (dt.year, dt.month)
+            monthly_groups[key].append(rec)
 
-        lower_bound = q1 - factor * iqr
-        upper_bound = q3 + factor * iqr
+        cleaned = []
 
-        # Фильтрация
-        filtered = [
-            rec for rec in self.history
-            if lower_bound <= rec[1] <= upper_bound
-        ]
-        self.history = filtered
+        for key in sorted(monthly_groups.keys()):
+            month_records = monthly_groups[key]
+            prices = np.array([rec[1] for rec in month_records])
+
+            if len(prices) < 4:
+                cleaned.extend(month_records)
+                continue
+
+            q1 = np.percentile(prices, 25)
+            q3 = np.percentile(prices, 75)
+            iqr = q3 - q1
+
+            lower = q1 - factor * iqr
+            upper = q3 + factor * iqr
+
+            filtered = [rec for rec in month_records if lower <= rec[1] <= upper]
+
+            if debug:
+                outliers = [rec for rec in month_records if rec not in filtered]
+                print(f"[{key}] удалено {len(outliers)} выбросов")
+
+            cleaned.extend(filtered)
+
+        self.history = sorted(cleaned, key=lambda r: r[0])
 
     def linreg(self, since_dt):
         """Возвращает (наклон, пересечение, x, y) для истории с since_dt до now"""
@@ -140,6 +175,9 @@ def plot_history(history, title, analyzer):
     plt.figure(figsize=(12, 6))
     plt.plot(dates, prices, label="Цена", color='blue')
 
+    raw_dates = [d for d, p, v in analyzer.raw_history]
+    raw_prices = [p for d, p, v in analyzer.raw_history]
+    plt.plot(raw_dates, raw_prices, label="До очистки", color='gray', alpha=0.4)
     # Получаем тренды
     trends = analyzer.calc_trends()
 
@@ -173,11 +211,33 @@ def plot_history(history, title, analyzer):
     plt.legend()
     plt.show()
 
+def preprocessing(history, debug=False):
+    """
+    Выполняет предобработку истории цен и возвращает наклоны трендов.
+    """
+    analyzer = HistoryAnalyzer(history, debug=debug)
+
+    high_approx, low_approx, volume, moment_price = analyzer.bef_cleaning_summary()  # аппрокс. высокая и низкая цена за неделю
+    # remove outliers factor=0.2
+    analyzer.remove_price_outliers_iqr(0.2, debug)
+
+    six_m = analyzer.linreg(analyzer.six_month_ago)
+    if six_m:
+        slope_six_m, *_= six_m
+    one_m = analyzer.linreg(analyzer.one_month_ago)
+    if one_m:
+        slope_one_m, *_ = one_m
+    if debug:
+        plot_history(analyzer.history, "История цен", analyzer)
+
+    avg_month_price, avg_week_price = analyzer.calc_avg()
+
+    return slope_six_m, slope_one_m, avg_month_price, avg_week_price, volume, high_approx, low_approx, moment_price
 
 def test():
     load_dotenv()
-    db = PostgreSQLDB("127.0.0.1", 5432, "steam", "postgres", os.getenv("DEFAULT_PASSWORD"))
-    skin_id = 1639  # Пример ID скина
+    db = PostgreSQLDB(password=os.getenv("DEFAULT_PASSWORD"))
+    skin_id = 245  # Пример ID скина
     db.cursor.execute("""
         SELECT date, price, volume
         FROM pricehistory
@@ -187,30 +247,8 @@ def test():
     """, (skin_id,))
     history = db.cursor.fetchall()
 
-    slope_six_m, slope_one_m, avg_month_price, avg_week_price, total_week_volume, high_approx, low_approx = preprocessing(history)
-    print(f"6 мес. наклон: {slope_six_m}, 1 мес. наклон: {slope_one_m}")
-    print(f"Средняя цена за месяц: {avg_month_price}, за неделю: {avg_week_price}")
-    print(f"Общий объём за неделю: {total_week_volume}, высокая аппрокс. цена: {high_approx}, низкая аппрокс. цена: {low_approx}")
-
-def preprocessing(history):
-    """
-    Выполняет предобработку истории цен и возвращает наклоны трендов.
-    """
-    analyzer = HistoryAnalyzer(history)
-    # remove hours and group by day
-    analyzer.aggregate_daily()
-    # remove outliers factor=0.2
-    analyzer.remove_price_outliers_iqr(0.2)
-    six_m = analyzer.linreg(analyzer.six_month_ago)
-    if six_m:
-        slope_six_m, *_= six_m
-    one_m = analyzer.linreg(analyzer.one_month_ago)
-    if one_m:
-        slope_one_m, *_ = one_m
-    
-    avg_month_price, avg_week_price, total_week_volume, high_approx, low_approx = analyzer.summary()
-
-    return slope_six_m, slope_one_m, avg_month_price, avg_week_price, total_week_volume, high_approx, low_approx
+    linreg_6m, linreg_1m, avg_month_price, avg_week_price, volume, high_approx, low_approx, moment_price = preprocessing(history)
+    print(f"slope_six_m = {linreg_6m}, slope_one_m = {linreg_1m}, avg_month_price = {avg_month_price}, avg_week_price = {avg_week_price}, total_week_volume = {volume}, high_approx = {high_approx}, low_approx = {low_approx}, moment_price = {moment_price}")
 
 if __name__ == "__main__":
     print("preprocess.py is a module, not a script. Use it as an import in your code.")

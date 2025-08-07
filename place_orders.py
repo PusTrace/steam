@@ -58,8 +58,8 @@ if __name__ == "__main__":
     cookies, driver = authorize_and_get_cookies()
     load_dotenv()
 
-    db = PostgreSQLDB("127.0.0.1", 5432, "steam", "postgres", os.getenv("DEFAULT_PASSWORD"))
-    model = PTModel(model_type)
+    db = PostgreSQLDB(os.getenv("DEFAULT_PASSWORD"))
+    agent = PTModel(model_type)
 
     skins = db.get_filtred_skins()
 
@@ -67,32 +67,27 @@ if __name__ == "__main__":
         # get & update data in db
         history, skin_orders = update_data(db, skin, cookies)
         
-        price, volume, approx_max, approx_min, linreg = preprocessing(history)
-        db.update_skins_analysis(skin[0], price, volume, approx_max, approx_min, linreg)
+        slope_six_m, slope_one_m, avg_month_price, avg_week_price, volume, high_approx, low_approx, moment_price = preprocessing(history)
+        db.update_skins_analysis(skin[0], moment_price, volume, high_approx, low_approx, slope_six_m, slope_one_m, avg_month_price, avg_week_price)
         db.commit()
 
-        if linreg is None or linreg < 0:
-            print(f"Предсказание линейной регрессии для {skin[1]} (ID: {skin[0]}) не удалось или отрицательное.")
-            continue
         # model prediction
-        y, amount, profit, buy_volume = model.predict(
-            price=price,
+        y, amount, snapshot = agent.decide(
+            moment_price=moment_price,
             volume=volume,
-            skin_orders=skin_orders,
-            linreg=linreg,
+            high_approx= high_approx,
+            low_approx= low_approx,
+            slope_six_m= slope_six_m,
+            slope_one_m= slope_one_m,
+            avg_month_price= avg_month_price,
+            avg_week_price= avg_week_price,
+            skin_orders=skin_orders
         )
-        placed_snapshot = {
-            "price": price,
-            "sell_volume": volume,
-            "buy_volume": buy_volume,
-            "linreg": linreg,
-            "skin_orders": skin_orders
-
-        }
         # buy and log if y is not none
         if y is not None:
             buy_skin(driver, skin[1], y, amount)
-            db.log_placement(skin[0], price, amount, profit, model_type, placed_snapshot)
+            # TODO log placement
+            db.log_placement(skin[0], skin[1], y, amount, model_type, snapshot)
             db.commit()
 
     driver.quit()
