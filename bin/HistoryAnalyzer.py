@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
-from PostgreSQLDB import PostgreSQLDB
+from bin.PostgreSQLDB import PostgreSQLDB
 import os
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -247,7 +247,7 @@ def test():
     """, (skin_id,))
     history = db.cursor.fetchall()
 
-    linreg_6m, linreg_1m, avg_month_price, avg_week_price, volume, high_approx, low_approx, moment_price = preprocessing(history)
+    linreg_6m, linreg_1m, avg_month_price, avg_week_price, volume, high_approx, low_approx, moment_price = preprocessing(history, debug=True)
     print(f"slope_six_m = {linreg_6m}, slope_one_m = {linreg_1m}, avg_month_price = {avg_month_price}, avg_week_price = {avg_week_price}, total_week_volume = {volume}, high_approx = {high_approx}, low_approx = {low_approx}, moment_price = {moment_price}")
 
 if __name__ == "__main__":

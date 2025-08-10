@@ -6,9 +6,10 @@ from datetime import datetime, timezone
 import random
 import os
 from dotenv import load_dotenv
-from utils import normalize_date
-from steam import authorize_and_get_cookies
-from PostgreSQLDB import PostgreSQLDB
+
+from bin.utils import normalize_date
+from bin.steam import authorize_and_get_cookies
+from bin.PostgreSQLDB import PostgreSQLDB
 
 def get_orders(skin_id):
     params = {

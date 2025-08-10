@@ -58,7 +58,7 @@ if __name__ == "__main__":
     cookies, driver = authorize_and_get_cookies()
     load_dotenv()
 
-    db = PostgreSQLDB(os.getenv("DEFAULT_PASSWORD"))
+    db = PostgreSQLDB(password=os.getenv("DEFAULT_PASSWORD"))
     agent = PTModel(model_type)
 
     skins = db.get_filtred_skins()
@@ -86,7 +86,6 @@ if __name__ == "__main__":
         # buy and log if y is not none
         if y is not None:
             buy_skin(driver, skin[1], y, amount)
-            # TODO log placement
             db.log_placement(skin[0], skin[1], y, amount, model_type, snapshot)
             db.commit()
 

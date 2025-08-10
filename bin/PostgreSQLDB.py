@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2.extras import Json
 from datetime import datetime
-from utils import normalize_date
+from bin.utils import normalize_date
 
 class PostgreSQLDB:
     def __init__(
@@ -67,8 +67,15 @@ class PostgreSQLDB:
                 VALUES (%s, %s, %s, %s)
             """, to_insert)
 
+    def update_skins_analysis(self, id, moment_price, volume, high_approx, low_approx,
+                            slope_six_m, slope_one_m, avg_month_price, avg_week_price):
 
-    def update_skins_analysis(self, id, moment_price, volume, high_approx, low_approx, slope_six_m, slope_one_m, avg_month_price, avg_week_price):
+        # Приводим к обычным float
+        slope_six_m = float(slope_six_m)
+        slope_one_m = float(slope_one_m)
+        avg_month_price = float(avg_month_price)
+        avg_week_price = float(avg_week_price)
+
         self.cursor.execute("""
             UPDATE skins
             SET moment_price = %s,
@@ -76,18 +83,29 @@ class PostgreSQLDB:
                 high_approx = %s,
                 low_approx = %s,
                 analysis_timestamp = %s,
-                linreg_6m = %s
-                linreg_1m = %s
+                linreg_6m = %s,
+                linreg_1m = %s,
                 avg_month_price = %s,
                 avg_week_price = %s
             WHERE id = %s
-        """, (moment_price, volume, high_approx, low_approx, datetime.now().isoformat(), slope_six_m, slope_one_m,avg_month_price, avg_week_price, id))
+        """, (
+            moment_price,
+            volume,
+            high_approx,
+            low_approx,
+            datetime.now(),
+            slope_six_m,
+            slope_one_m,
+            avg_month_price,
+            avg_week_price,
+            id
+        ))
 
-    def log_placement(self, skin_id, price, amount, profit, model_type, placed_snapshot):
+    def log_placement(self, skin_id, name, y, amount, model_type, placed_snapshot):
         self.cursor.execute("""
-            INSERT INTO logs (skin_id, placed_time, price, quantity, profit, model_type, placed_snapshot)
+            INSERT INTO logs (skin_id, name, y, amount, model_type, placed_time, placed_snapshot)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (skin_id, datetime.now().isoformat(), price, amount, profit, model_type, Json(placed_snapshot)))
+        """, (skin_id, name, y, amount, model_type, datetime.now().isoformat(), Json(placed_snapshot)))
 
     def commit(self):
         self.conn.commit()
@@ -96,17 +114,16 @@ class PostgreSQLDB:
         self.cursor.close()
         self.conn.close()
         
-    def get_filtred_skins(self):
+    def get_filtred_skins(self): # TODO: change moment price to avg
         self.cursor.execute(
             """
             SELECT id, name, orders_timestamp, price_timestamp, item_name_id
             FROM skins
             WHERE 
-                price < 1500
-                AND price > 20
+                moment_price < 1500
+                AND moment_price > 20
                 AND volume > 10
                 AND item_name_id IS NOT NULL
-                AND linreg > 0
             """,
         )
         return self.cursor.fetchall()
