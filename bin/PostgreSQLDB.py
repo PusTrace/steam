@@ -114,17 +114,19 @@ class PostgreSQLDB:
         self.cursor.close()
         self.conn.close()
         
-    def get_filtred_skins(self): # TODO: change moment price to avg
+    def get_filtered_skins(self, price):  # TODO: change moment price to avg
         self.cursor.execute(
             """
             SELECT id, name, orders_timestamp, price_timestamp, item_name_id
             FROM skins
             WHERE 
-                moment_price < 1500
+                moment_price < %s
                 AND moment_price > 20
                 AND volume > 10
                 AND item_name_id IS NOT NULL
-            """,
+                AND name NOT IN (SELECT name FROM logs)
+            """, (price,)
         )
         return self.cursor.fetchall()
+
     

@@ -61,7 +61,7 @@ if __name__ == "__main__":
     db = PostgreSQLDB(password=os.getenv("DEFAULT_PASSWORD"))
     agent = PTModel(model_type)
 
-    skins = db.get_filtred_skins()
+    skins = db.get_filtered_skins(price=3500)
 
     for skin in skins:
         # get & update data in db

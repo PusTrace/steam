@@ -78,14 +78,16 @@ class EVA(BaseStrategy):
                 wall_price = current_order[0]
                 walls.append((wall_price, wall_volume))
 
+        target_wall_price = None  
+        
         # === Перебиваем первую найденную стенку ===
         if walls:
             target_wall_price = walls[0][0]
             y = target_wall_price + self.avg_week_price * 0.001
             print(f"[EVA] Перебиваем стенку по цене {target_wall_price} -> новая цена {y:.2f}")
         else:
-            y = min_price
-            print("[EVA] [ERROR] Стенок не найдено — используем минимальную цену в диапазоне")
+            y = self.avg_week_price * 0.75
+            print("[EVA] [ERROR] Стенок не найдено — используем {y:.2f} как цену")
 
         snapshot = self.do_snapshot(y=y, threshold_top=threshold_top, target_wall_price=target_wall_price)
 
