@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extras import Json
-from datetime import datetime
+from datetime import datetime, timezone
 from bin.utils import normalize_date
 
 class PostgreSQLDB:
@@ -128,5 +128,58 @@ class PostgreSQLDB:
             """, (price,)
         )
         return self.cursor.fetchall()
-
     
+    def get_completed_orders(self):
+        self.cursor.execute(
+            """
+            SELECT * FROM logs WHERE order_complete = TRUE
+            """
+        )
+        return self.cursor.fetchall()
+    
+    
+    def log_completed_orders(self, inventory):
+        for skin, data in inventory.items():
+            marketable_time = data.get("marketable_time")
+            if marketable_time is not None:
+                clean = marketable_time.replace("Tradable/Marketable After ", "").replace(" GMT", "")
+                dt = datetime.strptime(clean, "%b %d, %Y (%H:%M:%S)")
+                dt = dt.replace(tzinfo=timezone.utc)
+
+                self.cursor.execute(
+                    """
+                    UPDATE logs
+                    SET order_complete = TRUE,
+                    time_removing_protection = %s
+                    WHERE name = %s
+                    """, (dt, skin)
+                )
+            self.cursor.execute(
+                """
+                UPDATE logs
+                SET order_complete = TRUE
+                WHERE name = %s
+                """, (skin,)
+            )
+        self.conn.commit()
+
+
+    def get_logged_skins(self):
+        self.cursor.execute(
+            """
+            SELECT s.* 
+            FROM skins s
+            INNER JOIN logs l ON s.id = l.skin_id
+            """
+        )
+        return self.cursor.fetchall()
+
+    def log_placed_to_sell(self, skin_id, sell_price, profit):
+        self.cursor.execute("""
+            UPDATE logs
+            SET placed_sell_time = %s,
+                sell_price = %s,
+                profit = %s
+            WHERE skin_id = %s
+        """, (datetime.now().isoformat(), skin_id, sell_price, profit))
+        self.conn.commit()

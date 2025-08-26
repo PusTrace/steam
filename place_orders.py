@@ -15,7 +15,7 @@ from bin.HistoryAnalyzer import preprocessing
 def get_market_data(skin, cursor, cookies):
     id, name, orders_timestamp, price_timestamp, item_name_id = skin
     # Проверяем, нужно ли брать новые ордера
-    if orders_timestamp is None or orders_timestamp < datetime.now(timezone.utc) - timedelta(days=2):
+    if orders_timestamp is None or orders_timestamp < datetime.now(timezone.utc) - timedelta(days=1):
         print(f"Используем API для получения ордеров для {name} (ID: {id})")
         item_orders = get_orders(item_name_id)
     else:
@@ -28,7 +28,7 @@ def get_market_data(skin, cursor, cookies):
             item_orders = None
 
     # Проверяем, нужно ли брать новые цены
-    if price_timestamp is None or price_timestamp < datetime.now(timezone.utc) - timedelta(days=2):
+    if price_timestamp is None or price_timestamp < datetime.now(timezone.utc) - timedelta(days=7):
         print(f"Используем API для получения цен для {name} (ID: {id})")
         item_price = get_history(name, cookies)
     else:

@@ -6,12 +6,11 @@ from datetime import datetime, timezone
 import random
 import os
 from dotenv import load_dotenv
-
 from bin.utils import normalize_date
 from bin.steam import authorize_and_get_cookies
 from bin.PostgreSQLDB import PostgreSQLDB
 
-def get_orders(skin_id):
+def get_orders(skin_id, sell_order_graph = False):
     params = {
         "country": "KZ",
         "language": "english",
@@ -34,7 +33,10 @@ def get_orders(skin_id):
             
             if data.get("success"):
                 print(f"Получены данные для {skin_id} (get_orders)")
-                return data.get("buy_order_graph")
+                if sell_order_graph:
+                    return data.get("sell_order_graph")
+                else:
+                    return data.get("buy_order_graph")
             else:
                 print(f"Не удалось получить данные для {skin_id}")
                 return None
@@ -115,12 +117,14 @@ def test_history():
         
 def test_orders():
     skin_id = 176262659  # Замените на реальный ID скина
-    orders = get_orders(skin_id)
+    orders = get_orders(skin_id, sell_order_graph=True)
     
     if orders:
         print(f"Получены ордера для скина {skin_id}: {orders}")
     else:
         print(f"Не удалось получить ордера для скина {skin_id}")
 
+
+
 if __name__ == "__main__":
-    test_history()
+    test_orders()
