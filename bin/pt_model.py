@@ -86,15 +86,17 @@ class EVA(BaseStrategy):
             y = target_wall_price + self.avg_week_price * 0.001
             print(f"[EVA] Перебиваем стенку по цене {target_wall_price} -> новая цена {y:.2f}")
         else:
-            y = self.avg_week_price * 0.75
             print("[EVA] [ERROR] Стенок не найдено — используем {y:.2f} как цену")
+            q = input("Введите 'q' для пропуска: ")
+            if q.lower() == 'q':
+                return None, None, None
 
-        snapshot = self.do_snapshot(y=y, threshold_top=threshold_top, target_wall_price=target_wall_price)
+        snapshot = self.snapshot(y=y, threshold_top=threshold_top, target_wall_price=target_wall_price)
 
         return round(y, 2), amount, snapshot
 
     
-    def do_snapshot(self, **kwargs):
+    def snapshot(self, **kwargs):
         y = kwargs.get("y")
         threshold_top = kwargs.get("threshold_top")
         first_wall_price = kwargs.get("target_wall_price")
@@ -124,7 +126,11 @@ class EVA(BaseStrategy):
             "snapshot_time": datetime.now().isoformat()
         }
 
-
+    def do_snapshot(self, **kwargs):
+        """
+        get y, buy_orders and return snapshot
+        """
+        print("TODO: do_snapshot not implemented yet")
 
 
     

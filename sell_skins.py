@@ -5,35 +5,49 @@ from datetime import datetime, timedelta, timezone
 from bin.parsers import get_orders, get_history
 from bin.steam import get_inventory, sell_skin, generate_steam_market_url, authorize_and_get_cookies
 from bin.PostgreSQLDB import PostgreSQLDB
+from bin.HistoryAnalyzer import preprocessing
 
 
-def get_avg_price(skin, cursor, cookies):
-    id, name, orders_timestamp, price_timestamp, item_name_id = skin
+def get_avg_price(avg_week_price, volume, sell_orders):
+    # TODO: sell_orders is a list which i don't use yet
+    print(f"avg_week_price: {avg_week_price}, volume: {volume}")
+    print(f"sell_orders: {sell_orders}")
+    exit()
+
+
+def update_data(skin, cursor, cookies):
+    id, name, sell_orders_timestamp, analysis_timestamp, item_name_id = skin
     # Проверяем, нужно ли брать новые ордера
-    if orders_timestamp is None or orders_timestamp < datetime.now(timezone.utc) - timedelta(days=1):
+    if sell_orders_timestamp is None or sell_orders_timestamp < datetime.now(timezone.utc) - timedelta(days=1):
         print(f"Используем API для получения ордеров для {name} (ID: {id})")
-        item_orders = get_orders(item_name_id, sell_order_graph = True)
+        buy_orders, sell_orders = get_orders(item_name_id, sell_orders = True)
+        db.insert_or_update_orders(skin[0], buy_orders, sell_orders)
+        db.update_skin_orders_timestamp(skin[0], sell_orders=True)
+        db.commit()
     else:
         print(f"Используем ордера базы данных для {name} (ID: {id})")
-        cursor.execute("SELECT data FROM orders WHERE skin_id = %s", (id,))
+        cursor.execute("SELECT sell_orders FROM orders WHERE skin_id = %s", (id,))
         result = cursor.fetchone()
         if result:
-            item_orders = result[0]  # assuming data is in first column
+            sell_orders = result[0]
         else:
-            item_orders = None
+            sell_orders = None
 
     # Проверяем, нужно ли брать новые цены
-    if price_timestamp is None or price_timestamp < datetime.now(timezone.utc) - timedelta(days=7):
+    if analysis_timestamp is None or analysis_timestamp < datetime.now(timezone.utc) - timedelta(days=7):
         print(f"Используем API для получения цен для {name} (ID: {id})")
         price_history = get_history(name, cookies)
         db.update_price_history(skin[0], price_history)
         db.update_skin_price_timestamp(skin[0])
+        slope_six_m, slope_one_m, avg_month_price, avg_week_price, volume, high_approx, low_approx, moment_price = preprocessing(price_history)
+        db.update_skins_analysis(skin[0], moment_price, volume, high_approx, low_approx, slope_six_m, slope_one_m, avg_month_price, avg_week_price)
         db.commit()
     else:
         cursor.execute("select volume, avg_week_price from skins WHERE id = %s", (id,))
 
+    return avg_week_price, volume, sell_orders
 
-    return price_history, item_orders
+    
 
     
 
@@ -62,8 +76,10 @@ if __name__ == "__main__":
 
         skin_data = next(s for s in skins if s[1] == skin_name)
 
-        avg_price = get_avg_price(skin_data, db.cursor, cookies)
+        avg_week_price, volume, sell_orders = update_data(skin_data, db.cursor, cookies)
         
+        avg_price = get_avg_price(avg_week_price, volume, sell_orders)
+
         margin = ((avg_price * 0.87) - my_price) * 100 / my_price
         
         if margin < 0:
@@ -74,7 +90,7 @@ if __name__ == "__main__":
 
         print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
 
-        sell_skin(sell_price, list_of_assets, cookies)
+        sell_skin(sell_price, list_of_assets, cookies) # TODO: sell_skins api is updated, need to test
         db.log_placed_to_sell(skin_id, sell_price, margin)
 
     

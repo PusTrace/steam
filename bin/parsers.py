@@ -10,7 +10,7 @@ from bin.utils import normalize_date
 from bin.steam import authorize_and_get_cookies
 from bin.PostgreSQLDB import PostgreSQLDB
 
-def get_orders(skin_id, sell_order_graph = False):
+def get_orders(skin_id, sell_orders = False):
     params = {
         "country": "KZ",
         "language": "english",
@@ -33,8 +33,8 @@ def get_orders(skin_id, sell_order_graph = False):
             
             if data.get("success"):
                 print(f"Получены данные для {skin_id} (get_orders)")
-                if sell_order_graph:
-                    return data.get("sell_order_graph")
+                if sell_orders:
+                    return data.get("buy_order_graph"), data.get("sell_order_graph")
                 else:
                     return data.get("buy_order_graph")
             else:

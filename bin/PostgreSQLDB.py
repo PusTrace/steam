@@ -22,20 +22,36 @@ class PostgreSQLDB:
         self.cursor = self.conn.cursor()
 
 
-    def insert_or_update_orders(self, skin_id, skin_orders):
-        self.cursor.execute("""
-            INSERT INTO orders (skin_id, data)
-            VALUES (%s, %s)
-            ON CONFLICT (skin_id) DO UPDATE
-            SET data = EXCLUDED.data
-        """, (skin_id, Json(skin_orders)))
+    def insert_or_update_orders(self, skin_id, skin_orders, sell_orders=None):
+        if sell_orders is not None:
+            self.cursor.execute("""
+                INSERT INTO orders (skin_id, data, sell_orders)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (skin_id) DO UPDATE
+                SET data = EXCLUDED.data,
+                 sell_orders = EXCLUDED.sell_orders 
+            """, (skin_id, Json(skin_orders), Json(sell_orders)))
+        else:
+            self.cursor.execute("""
+                INSERT INTO orders (skin_id, data)
+                VALUES (%s, %s)
+                ON CONFLICT (skin_id) DO UPDATE
+                SET data = EXCLUDED.data
+            """, (skin_id, Json(skin_orders)))
 
-    def update_skin_orders_timestamp(self, skin_id):
-        self.cursor.execute("""
+    def update_skin_orders_timestamp(self, skin_id, sell_orders=False):
+        if sell_orders:
+            self.cursor.execute("""
             UPDATE skins
-            SET orders_timestamp = %s
+            SET sell_orders_timestamp = %s
             WHERE id = %s
         """, (datetime.now().isoformat(), skin_id))
+        else:
+            self.cursor.execute("""
+                UPDATE skins
+                SET orders_timestamp = %s
+                WHERE id = %s
+            """, (datetime.now().isoformat(), skin_id))
 
     def update_skin_price_timestamp(self, skin_id):
         self.cursor.execute("""
