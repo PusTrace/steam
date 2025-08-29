@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2.extras import Json
 from datetime import datetime, timezone
-from bin.utils import normalize_date
+from steam.bin.utils import normalize_date
 
 class PostgreSQLDB:
     def __init__(
@@ -177,13 +177,13 @@ class PostgreSQLDB:
                 WHERE name = %s
                 """, (skin,)
             )
-        self.conn.commit()
+        
 
 
     def get_logged_skins(self):
         self.cursor.execute(
             """
-            SELECT s.* 
+            SELECT s.id, s.name, s.sell_orders_timestamp, s.analysis_timestamp, s.item_name_id 
             FROM skins s
             INNER JOIN logs l ON s.id = l.skin_id
             """
@@ -198,4 +198,4 @@ class PostgreSQLDB:
                 profit = %s
             WHERE skin_id = %s
         """, (datetime.now().isoformat(), skin_id, sell_price, profit))
-        self.conn.commit()
+        

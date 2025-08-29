@@ -2,18 +2,16 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta, timezone
 
-from bin.parsers import get_orders, get_history
-from bin.steam import get_inventory, sell_skin, generate_steam_market_url, authorize_and_get_cookies
-from bin.PostgreSQLDB import PostgreSQLDB
-from bin.HistoryAnalyzer import preprocessing
+from steam.bin.parsers import get_orders, get_history
+from steam.bin.steam import get_inventory, generate_steam_market_url, authorize_and_get_cookies
+from steam.bin.PostgreSQLDB import PostgreSQLDB
+from steam.bin.HistoryAnalyzer import preprocessing
 
 
-def get_avg_price(avg_week_price, volume, sell_orders):
-    # TODO: sell_orders is a list which i don't use yet
-    print(f"avg_week_price: {avg_week_price}, volume: {volume}")
-    print(f"sell_orders: {sell_orders}")
-    exit()
-
+def get_avg_price(avg_week_price, sell_orders):
+    avg_sell_price = (sell_orders[0][0] + sell_orders[1][0] + sell_orders[2][0]) / 3 if sell_orders and len(sell_orders) >= 3 else 0
+    avg_price = max(avg_week_price, avg_sell_price)
+    return avg_price
 
 def update_data(skin, cursor, cookies):
     id, name, sell_orders_timestamp, analysis_timestamp, item_name_id = skin
@@ -45,7 +43,7 @@ def update_data(skin, cursor, cookies):
     else:
         cursor.execute("select volume, avg_week_price from skins WHERE id = %s", (id,))
 
-    return avg_week_price, volume, sell_orders
+    return avg_week_price, sell_orders
 
     
 
@@ -61,6 +59,7 @@ if __name__ == "__main__":
     # 3. get data from api
     inventory = get_inventory(cookies)
     db.log_completed_orders(inventory)
+    db.commit()
 
     logs = db.get_completed_orders()
     skins = db.get_logged_skins()
@@ -76,9 +75,9 @@ if __name__ == "__main__":
 
         skin_data = next(s for s in skins if s[1] == skin_name)
 
-        avg_week_price, volume, sell_orders = update_data(skin_data, db.cursor, cookies)
+        avg_week_price, sell_orders = update_data(skin_data, db.cursor, cookies)
         
-        avg_price = get_avg_price(avg_week_price, volume, sell_orders)
+        avg_price = get_avg_price(avg_week_price, sell_orders)
 
         margin = ((avg_price * 0.87) - my_price) * 100 / my_price
         
@@ -91,6 +90,10 @@ if __name__ == "__main__":
         print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
 
         sell_skin(sell_price, list_of_assets, cookies) # TODO: sell_skins api is updated, need to test
+        
         db.log_placed_to_sell(skin_id, sell_price, margin)
+        db.commit()
+
+    db.close()
 
     

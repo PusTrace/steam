@@ -1,7 +1,7 @@
 import numpy as np
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
-from bin.PostgreSQLDB import PostgreSQLDB
+from steam.bin.PostgreSQLDB import PostgreSQLDB
 import os
 import matplotlib.pyplot as plt
 from collections import defaultdict

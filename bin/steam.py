@@ -21,6 +21,7 @@ def steam_login(driver):
     )
     print("Авторизация в Steam выполнена.")
 
+
 def setup_driver(headless=True):
     options = Options()
     if headless:
@@ -149,6 +150,7 @@ def generate_steam_market_url(item_name: str) -> str:
     encoded_name = urllib.parse.quote(item_name)
     return base_url + encoded_name
 
+
 def get_inventory(cookies_from_browser):
     """
     return a dictionary like this: {name: {marketable, classid, instanceid, asset_ids: [], marketable_time}}
@@ -211,6 +213,7 @@ def get_inventory(cookies_from_browser):
     else:
         print(f"Ошибка запроса инвентаря: статус {response.status_code}")
    
+
 def cancel_order(skin, buy_order_id, cookies):
     """Отменяет ордер на покупку скина."""
     url = "https://steamcommunity.com/market/cancelbuyorder/"  # исправил URL
@@ -258,6 +261,7 @@ def cancel_order(skin, buy_order_id, cookies):
     else:
         print(f"Ошибка при попытке убрать skin {skin}: {response.status_code}\nОтвет: {response.text}")
 
+
 def sell_skin(price, list_of_assets, cookies):
     url = "https://steamcommunity.com/market/sellitem/"
     price_for_steam = round(price * 100)
@@ -303,6 +307,7 @@ def sell_skin(price, list_of_assets, cookies):
         else:
             print(f"Ошибка при продаже asset {asset}: {response.status_code}\nОтвет: {response.text}")
 
+
 def get_list_of_my_orders(cookies_from_browser):
     url = "https://steamcommunity.com/market/"
 
@@ -341,3 +346,5 @@ def get_list_of_my_orders(cookies_from_browser):
                 orders_dict[item_name] = order_id
             
         return orders_dict
+
+

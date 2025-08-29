@@ -3,14 +3,14 @@ import os
 from dotenv import load_dotenv
 
 # database
-from bin.PostgreSQLDB import PostgreSQLDB
+from steam.bin.PostgreSQLDB import PostgreSQLDB
 # Models
-from bin.pt_model import PTModel
+from steam.bin.pt_model import PTModel
 # small scripts
-from bin.parsers import get_orders, get_history
-from bin.steam import authorize_and_get_cookies, buy_skin
-from bin.utils import normalize_date
-from bin.HistoryAnalyzer import preprocessing
+from steam.bin.parsers import get_orders, get_history
+from steam.bin.steam import authorize_and_get_cookies, buy_skin
+from steam.bin.utils import normalize_date
+from steam.bin.HistoryAnalyzer import preprocessing
 
 def get_market_data(skin, cursor, cookies):
     id, name, orders_timestamp, price_timestamp, item_name_id = skin
