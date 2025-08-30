@@ -263,8 +263,11 @@ def cancel_order(skin, buy_order_id, cookies):
 
 
 def sell_skin(price, list_of_assets, cookies):
+    """
+    place a sell order for each asset in list_of_assets at the given price
+    """
     url = "https://steamcommunity.com/market/sellitem/"
-    price_for_steam = round(price * 100)
+    price_for_steam = round(price * 100 *0.87)
 
     session = requests.Session()
 

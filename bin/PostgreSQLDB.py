@@ -197,5 +197,5 @@ class PostgreSQLDB:
                 sell_price = %s,
                 profit = %s
             WHERE skin_id = %s
-        """, (datetime.now().isoformat(), skin_id, sell_price, profit))
+        """, (datetime.now().isoformat(), sell_price, profit, skin_id))
         

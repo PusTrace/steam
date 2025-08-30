@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from steam.bin.parsers import get_orders, get_history
-from steam.bin.steam import get_inventory, generate_steam_market_url, authorize_and_get_cookies
+from steam.bin.steam import get_inventory, generate_steam_market_url, authorize_and_get_cookies, sell_skin
 from steam.bin.PostgreSQLDB import PostgreSQLDB
 from steam.bin.HistoryAnalyzer import preprocessing
 
@@ -11,6 +11,7 @@ from steam.bin.HistoryAnalyzer import preprocessing
 def get_avg_price(avg_week_price, sell_orders):
     avg_sell_price = (sell_orders[0][0] + sell_orders[1][0] + sell_orders[2][0]) / 3 if sell_orders and len(sell_orders) >= 3 else 0
     avg_price = max(avg_week_price, avg_sell_price)
+    print(f"Avg week price: {avg_week_price}, Avg sell price: {avg_sell_price}, Used avg price: {avg_price}")
     return avg_price
 
 def update_data(skin, cursor, cookies):
@@ -41,7 +42,13 @@ def update_data(skin, cursor, cookies):
         db.update_skins_analysis(skin[0], moment_price, volume, high_approx, low_approx, slope_six_m, slope_one_m, avg_month_price, avg_week_price)
         db.commit()
     else:
-        cursor.execute("select volume, avg_week_price from skins WHERE id = %s", (id,))
+        cursor.execute("SELECT avg_week_price FROM skins WHERE id = %s", (id,))
+        result = cursor.fetchone()
+        if result:
+            avg_week_price = result[0]
+        else:
+            avg_week_price = 0
+
 
     return avg_week_price, sell_orders
 
@@ -89,7 +96,8 @@ if __name__ == "__main__":
 
         print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
 
-        sell_skin(sell_price, list_of_assets, cookies) # TODO: sell_skins api is updated, need to test
+        print(f"Selling {skin_name} for {sell_price:.2f}. Link: {url}, Asset IDs: {list_of_assets}")
+        sell_skin(sell_price, list_of_assets, cookies)
         
         db.log_placed_to_sell(skin_id, sell_price, margin)
         db.commit()
