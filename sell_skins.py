@@ -9,10 +9,10 @@ from steam.bin.HistoryAnalyzer import preprocessing
 
 
 def get_avg_price(avg_week_price, sell_orders):
-    avg_sell_price = (sell_orders[0][0] + sell_orders[1][0] + sell_orders[2][0]) / 3 if sell_orders and len(sell_orders) >= 3 else 0
+    avg_sell_price = (sell_orders[0][0] + sell_orders[1][0] + sell_orders[2][0] + sell_orders[3][0] + sell_orders[4][0]) / 5 if sell_orders and len(sell_orders) >= 5 else 0
     avg_price = max(avg_week_price, avg_sell_price)
     print(f"Avg week price: {avg_week_price}, Avg sell price: {avg_sell_price}, Used avg price: {avg_price}")
-    return avg_price
+    return avg_price*1.02
 
 def update_data(skin, cursor, cookies):
     id, name, sell_orders_timestamp, analysis_timestamp, item_name_id = skin
@@ -65,6 +65,7 @@ if __name__ == "__main__":
 
     # 3. get data from api
     inventory = get_inventory(cookies)
+    print(inventory)
     db.log_completed_orders(inventory)
     db.commit()
 
@@ -97,10 +98,11 @@ if __name__ == "__main__":
         print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
 
         print(f"Selling {skin_name} for {sell_price:.2f}. Link: {url}, Asset IDs: {list_of_assets}")
-        sell_skin(sell_price, list_of_assets, cookies)
-        
-        db.log_placed_to_sell(skin_id, sell_price, margin)
-        db.commit()
+        success = sell_skin(sell_price, list_of_assets, cookies)
+
+        if success:
+            db.log_placed_to_sell(skin_id, sell_price, margin)
+            db.commit()
 
     db.close()
 

@@ -306,9 +306,9 @@ def sell_skin(price, list_of_assets, cookies):
         response = session.post(url, headers=headers, data=data)
 
         if response.status_code == 200:
-            print(f"Asset {asset} успешно выставлен на продажу.\nОтвет: {response.text}")
+            return True
         else:
-            print(f"Ошибка при продаже asset {asset}: {response.status_code}\nОтвет: {response.text}")
+            return False
 
 
 def get_list_of_my_orders(cookies_from_browser):

@@ -148,7 +148,7 @@ class PostgreSQLDB:
     def get_completed_orders(self):
         self.cursor.execute(
             """
-            SELECT * FROM logs WHERE order_complete = TRUE
+            SELECT * FROM logs WHERE order_complete = TRUE and profit IS NULL
             """
         )
         return self.cursor.fetchall()
