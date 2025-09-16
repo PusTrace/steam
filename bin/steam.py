@@ -91,10 +91,10 @@ def authorize_and_get_cookies(only_cookies=False):
     save_cookies_with_timestamp(cookies)
     if only_cookies:
         return cookies
-    
-    driver_headless = setup_driver(headless=True)
-    load_cookies(driver_headless, cookies)
-    return cookies, driver_headless
+    else:    
+        driver_headless = setup_driver(headless=True)
+        load_cookies(driver_headless, cookies)
+        return cookies, driver_headless
 
 
 def buy_skin(driver, skin, y, number_of_items):
@@ -175,6 +175,7 @@ def get_inventory(cookies_from_browser):
         # Получаем списки assets и описаний
         assets = data.get('assets', [])
         descriptions = data.get('descriptions', [])
+        asset_properties = data.get('asset_properties', [])
 
         # Собираем все данные по asset'ам в список
         asset_data_list = []
@@ -209,6 +210,14 @@ def get_inventory(cookies_from_browser):
                 'asset_ids': asset_ids,
                 'marketable_time': marketable_time
             }
+            
+            for skin_pattern in asset_properties:
+                if skin_pattern.get('assetid') in asset_ids:
+                    if 'asset_properties' not in skins_data[market_hash_name]:
+                        skins_data[market_hash_name]['asset_properties'] = []
+                    skins_data[market_hash_name]['asset_properties'].append(skin_pattern)
+
+
         return skins_data
     else:
         print(f"Ошибка запроса инвентаря: статус {response.status_code}")
@@ -349,5 +358,4 @@ def get_list_of_my_orders(cookies_from_browser):
                 orders_dict[item_name] = order_id
             
         return orders_dict
-
 
