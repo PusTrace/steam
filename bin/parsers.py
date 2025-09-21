@@ -7,9 +7,9 @@ import random
 import os
 from dotenv import load_dotenv
 
-from steam.bin.utils import normalize_date
-from steam.bin.steam import authorize_and_get_cookies
-from steam.bin.PostgreSQLDB import PostgreSQLDB
+from bin.utils import normalize_date
+from bin.steam import authorize_and_get_cookies
+from bin.PostgreSQLDB import PostgreSQLDB
 
 def get_orders(skin_id, sell_orders = False):
     params = {

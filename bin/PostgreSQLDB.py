@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2.extras import Json
 from datetime import datetime, timezone
-from steam.bin.utils import normalize_date
+from bin.utils import normalize_date
 
 class PostgreSQLDB:
     def __init__(

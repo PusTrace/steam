@@ -2,10 +2,10 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta, timezone
 
-from steam.bin.parsers import get_orders, get_history
-from steam.bin.steam import get_inventory, generate_steam_market_url, authorize_and_get_cookies, sell_skin
-from steam.bin.PostgreSQLDB import PostgreSQLDB
-from steam.bin.HistoryAnalyzer import preprocessing
+from bin.parsers import get_orders, get_history
+from bin.steam import get_inventory, generate_steam_market_url, authorize_and_get_cookies, sell_skin
+from bin.PostgreSQLDB import PostgreSQLDB
+from bin.HistoryAnalyzer import preprocessing
 
 
 def get_avg_price(avg_week_price, sell_orders):
@@ -103,6 +103,8 @@ if __name__ == "__main__":
         if success:
             db.log_placed_to_sell(skin_id, sell_price, margin)
             db.commit()
+        else:
+            print(f"Failed to sell {skin_name}.")
 
     db.close()
 
