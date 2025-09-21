@@ -175,7 +175,6 @@ def get_inventory(cookies_from_browser):
         # Получаем списки assets и описаний
         assets = data.get('assets', [])
         descriptions = data.get('descriptions', [])
-        asset_properties = data.get('asset_properties', [])
 
         # Собираем все данные по asset'ам в список
         asset_data_list = []
@@ -211,12 +210,6 @@ def get_inventory(cookies_from_browser):
                 'marketable_time': marketable_time
             }
             
-            for skin_pattern in asset_properties:
-                if skin_pattern.get('assetid') in asset_ids:
-                    if 'asset_properties' not in skins_data[market_hash_name]:
-                        skins_data[market_hash_name]['asset_properties'] = []
-                    skins_data[market_hash_name]['asset_properties'].append(skin_pattern)
-
 
         return skins_data
     else:
