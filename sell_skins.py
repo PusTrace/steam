@@ -65,17 +65,15 @@ if __name__ == "__main__":
 
     # 3. get data from api
     inventory = get_inventory(cookies)
-    print(inventory)
     db.log_completed_orders(inventory)
     db.commit()
 
     logs = db.get_completed_orders()
     skins = db.get_logged_skins()
-
     for log in logs:
-        skin_name = log[14] # name
+        skin_name = log[9] # name
         print(f"Processing: '{skin_name}' .")
-        list_of_assets = inventory[skin_name].get("asset_ids")
+        asset_id = log[15] # asset_id
         my_price = log[2] # y
         skin_id = log[0] # id
 
@@ -96,12 +94,10 @@ if __name__ == "__main__":
             
 
         print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
-
-        print(f"Selling {skin_name} for {sell_price:.2f}. Link: {url}, Asset IDs: {list_of_assets}")
-        success = sell_skin(sell_price, list_of_assets, cookies)
+        success = sell_skin(sell_price, asset_id, cookies)
 
         if success:
-            db.log_placed_to_sell(skin_id, sell_price, margin)
+            db.log_placed_to_sell(asset_id, sell_price, margin)
             db.commit()
         else:
             print(f"Failed to sell {skin_name}.")

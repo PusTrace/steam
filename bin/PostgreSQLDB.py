@@ -148,15 +148,15 @@ class PostgreSQLDB:
     def get_completed_orders(self):
         self.cursor.execute(
             """
-            SELECT * FROM logs WHERE order_complete = TRUE and profit IS NULL
+            SELECT * FROM logs WHERE order_complete = TRUE and profit IS NULL AND time_removing_protection IS NULL AND float_value > 0.01
             """
         )
         return self.cursor.fetchall()
     
     
     def log_completed_orders(self, inventory):
-        for skin, data in inventory.items():
-            marketable_time = data.get("marketable_time")
+        for skin in inventory:
+            name, classid, instanceid, asset_id, marketable_time, float_value, int_value = skin
             if marketable_time is not None:
                 clean = marketable_time.replace("Tradable/Marketable After ", "").replace(" GMT", "")
                 dt = datetime.strptime(clean, "%b %d, %Y (%H:%M:%S)")
@@ -164,19 +164,44 @@ class PostgreSQLDB:
 
                 self.cursor.execute(
                     """
+                    WITH to_update AS (
+                        SELECT id
+                        FROM logs
+                        WHERE name = %s AND asset_id IS NULL
+                        ORDER BY placed_time ASC
+                        LIMIT 1
+                    )
                     UPDATE logs
                     SET order_complete = TRUE,
-                    time_removing_protection = %s
-                    WHERE name = %s
-                    """, (dt, skin)
-                )
-            self.cursor.execute(
-                """
-                UPDATE logs
-                SET order_complete = TRUE
-                WHERE name = %s
-                """, (skin,)
-            )
+                        time_removing_protection = %s,
+                        classid = %s,
+                        instanceid = %s,
+                        asset_id = %s,
+                        float_value = %s,
+                        int_pattern = %s
+                    WHERE id IN (SELECT id FROM to_update)
+                    """, (name, dt, classid, instanceid, asset_id, float_value, int_value)
+                    )
+            else:
+                self.cursor.execute(
+                    """
+                    WITH to_update AS (
+                        SELECT id
+                        FROM logs
+                        WHERE name = %s AND asset_id IS NULL
+                        ORDER BY placed_time ASC
+                        LIMIT 1
+                    )
+                    UPDATE logs
+                    SET order_complete = TRUE,
+                        classid = %s,
+                        instanceid = %s,
+                        asset_id = %s,
+                        float_value = %s,
+                        int_pattern = %s
+                    WHERE id IN (SELECT id FROM to_update)
+                    """, (name, classid, instanceid, asset_id, float_value, int_value)
+                    )
         
 
 
@@ -190,12 +215,12 @@ class PostgreSQLDB:
         )
         return self.cursor.fetchall()
 
-    def log_placed_to_sell(self, skin_id, sell_price, profit):
+    def log_placed_to_sell(self, asset_id, sell_price, profit):
         self.cursor.execute("""
             UPDATE logs
             SET placed_sell_time = %s,
                 sell_price = %s,
                 profit = %s
-            WHERE skin_id = %s
-        """, (datetime.now().isoformat(), sell_price, profit, skin_id))
+            WHERE asset_id = %s
+        """, (datetime.now().isoformat(), sell_price, profit, asset_id))
         

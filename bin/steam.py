@@ -150,10 +150,12 @@ def generate_steam_market_url(item_name: str) -> str:
     encoded_name = urllib.parse.quote(item_name)
     return base_url + encoded_name
 
+import requests
 
 def get_inventory(cookies_from_browser):
     """
-    return a dictionary like this: {name: {marketable, classid, instanceid, asset_ids: [], marketable_time}}
+    Возвращает двумерный массив:
+    [[name, classid, instanceid, asset_id, marketable_time, float_value, int_value], ...]
     """
     url = 'https://steamcommunity.com/inventory/76561198857946351/730/2'
     session = requests.Session()
@@ -170,57 +172,78 @@ def get_inventory(cookies_from_browser):
     response = session.get(url, headers=headers)
     if response.status_code == 200:
         data = response.json()
-        skins_data = {}
 
-        # Получаем списки assets и описаний
         assets = data.get('assets', [])
         descriptions = data.get('descriptions', [])
-        # asset_properties = data.get('asset_properties', [])
+        asset_properties = data.get('asset_properties', [])
 
-        # Собираем все данные по asset'ам в список
+        # Подготавливаем список asset_id -> свойства
+        properties_map = {}
+        for prop in asset_properties:
+            assetid = prop.get("assetid")
+            props = prop.get("asset_properties", [])
+            float_value, int_value = None, None
+            for p in props:
+                if "float_value" in p:
+                    float_value = float(p.get("float_value"))
+                if "int_value" in p:
+                    int_value = int(p.get("int_value"))
+            properties_map[assetid] = (float_value, int_value)
+
         asset_data_list = []
         for asset in assets:
-            asset_info = {
+            asset_data_list.append({
                 "assetid": asset.get('assetid'),
                 "classid": asset.get('classid'),
                 "instanceid": asset.get('instanceid')
-            }
-            asset_data_list.append(asset_info)
+            })
 
-        # Проходим по описаниям и ищем в asset_data_list совпадения по classid и instanceid
+        result = []
         for item in descriptions:
             market_hash_name = item.get('market_hash_name')
-            marketable = item.get('marketable')
             classid = item.get('classid')
             instanceid = item.get('instanceid')
             owner_descriptions = item.get('owner_descriptions')
-            marketable_time = owner_descriptions[1].get('value') if owner_descriptions is not None else None
+            marketable_time = owner_descriptions[1].get('value') if owner_descriptions else None
 
-            asset_ids = []
-
+            # находим первый asset_id (без массива)
+            asset_id = None
             for asset_item in asset_data_list:
                 if classid == asset_item.get('classid') and instanceid == asset_item.get('instanceid'):
-                    asset_ids.append(asset_item.get('assetid'))
-            
-            # Записываем собранные данные в skins_data
-            skins_data[market_hash_name] = {
-                'marketable': marketable,
-                'classid': classid,
-                'instanceid': instanceid,
-                'asset_ids': asset_ids,
-                'marketable_time': marketable_time
-            }
-            
-            # for skin_pattern in asset_properties:
-            #     if skin_pattern.get('assetid') in asset_ids:
-            #         if 'asset_properties' not in skins_data[market_hash_name]:
-            #             skins_data[market_hash_name]['asset_properties'] = []
-            #         skins_data[market_hash_name]['asset_properties'].append(skin_pattern['asset_properties'])
+                    asset_id = asset_item.get('assetid')
+                    break   # <--- выходим сразу, чтобы не копился список
 
-
-        return skins_data
+            # достаём float/int по asset_id
+            float_value, int_value = (None, None)
+            if asset_id:
+                float_value, int_value = properties_map.get(asset_id, (None, None))
+            if float_value is not None and int_value is not None:
+                result.append([
+                    market_hash_name,
+                    int(classid),
+                    int(instanceid),
+                    int(asset_id),
+                    marketable_time,
+                    float(float_value),
+                    int(int_value)
+                ])
+            else:
+                result.append([
+                    market_hash_name,
+                    int(classid),
+                    int(instanceid),
+                    int(asset_id),
+                    marketable_time,
+                    float_value,
+                    int_value
+                ])
+        return result
     else:
         print(f"Ошибка запроса инвентаря: статус {response.status_code}")
+        return []
+
+
+
    
 
 def cancel_order(skin, buy_order_id, cookies):
@@ -271,9 +294,9 @@ def cancel_order(skin, buy_order_id, cookies):
         print(f"Ошибка при попытке убрать skin {skin}: {response.status_code}\nОтвет: {response.text}")
 
 
-def sell_skin(price, list_of_assets, cookies):
+def sell_skin(price, asset_id, cookies):
     """
-    place a sell order for each asset in list_of_assets at the given price
+    place a sell order of asset at the given price
     """
     url = "https://steamcommunity.com/market/sellitem/"
     price_for_steam = round(price * 100 *0.87)
@@ -303,21 +326,22 @@ def sell_skin(price, list_of_assets, cookies):
         "Dnt": "1"
     }
 
-    for asset in list_of_assets:
-        data = {
-            "sessionid": sessionid,
-            "appid": "730",
-            "contextid": "2",
-            "assetid": asset,
-            "amount": "1",
-            "price": price_for_steam
-        }
-        response = session.post(url, headers=headers, data=data)
+    
+    data = {
+        "sessionid": sessionid,
+        "appid": "730",
+        "contextid": "2",
+        "assetid": asset_id,
+        "amount": 1,
+        "price": price_for_steam
+    }
+    response = session.post(url, headers=headers, data=data)
 
-        if response.status_code == 200:
-            return True
-        else:
-            return False
+    answer = response.json()
+    print(answer)
+    success = answer.get('success')
+    print(success)
+    return bool(success)
 
 
 def get_list_of_my_orders(cookies_from_browser):
