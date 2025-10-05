@@ -76,6 +76,7 @@ if __name__ == "__main__":
         asset_id = log[15] # asset_id
         my_price = log[2] # y
         skin_id = log[0] # id
+        from_outside = log[19] # from_outside
 
         url = generate_steam_market_url(skin_name)
 
@@ -85,15 +86,21 @@ if __name__ == "__main__":
         
         avg_price = get_avg_price(avg_week_price, sell_orders)
 
-        margin = ((avg_price * 0.87) - my_price) * 100 / my_price
-        
-        if margin < 0:
-            sell_price = my_price / 0.87
-        else:
+        if from_outside:
+            margin = None
             sell_price = avg_price
+            print(f"margin: None. Selling for {sell_price:.2f}")
+        else:
+            margin = ((avg_price * 0.87) - my_price) * 100 / my_price
+
+            if margin < 0:
+                sell_price = my_price / 0.87
+            else:
+                sell_price = avg_price
+            print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
             
 
-        print(f"margin: {margin:.2f}%. Selling for {sell_price:.2f}")
+        
         success = sell_skin(sell_price, asset_id, cookies)
 
         if success:

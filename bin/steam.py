@@ -340,7 +340,6 @@ def sell_skin(price, asset_id, cookies):
     answer = response.json()
     print(answer)
     success = answer.get('success')
-    print(success)
     return bool(success)
 
 

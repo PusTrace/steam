@@ -155,54 +155,83 @@ class PostgreSQLDB:
     
     
     def log_completed_orders(self, inventory):
+        self.cursor.execute("SELECT name FROM logs")
+        logged_skins = [row[0].strip() for row in self.cursor.fetchall()]
+        
+        self.cursor.execute("SELECT name, id FROM skins")
+        skin_ids = {row[0].strip(): row[1] for row in self.cursor.fetchall()}
+
+
         for skin in inventory:
             name, classid, instanceid, asset_id, marketable_time, float_value, int_value = skin
-            if marketable_time is not None:
-                clean = marketable_time.replace("Tradable/Marketable After ", "").replace(" GMT", "")
-                dt = datetime.strptime(clean, "%b %d, %Y (%H:%M:%S)")
-                dt = dt.replace(tzinfo=timezone.utc)
+            if name.strip() in logged_skins:
+                if marketable_time is not None:
+                    clean = marketable_time.replace("Tradable/Marketable After ", "").replace(" GMT", "")
+                    dt = datetime.strptime(clean, "%b %d, %Y (%H:%M:%S)")
+                    dt = dt.replace(tzinfo=timezone.utc)
 
-                self.cursor.execute(
-                    """
-                    WITH to_update AS (
-                        SELECT id
-                        FROM logs
-                        WHERE name = %s AND asset_id IS NULL
-                        ORDER BY placed_time ASC
-                        LIMIT 1
-                    )
-                    UPDATE logs
-                    SET order_complete = TRUE,
-                        time_removing_protection = %s,
-                        classid = %s,
-                        instanceid = %s,
-                        asset_id = %s,
-                        float_value = %s,
-                        int_pattern = %s
-                    WHERE id IN (SELECT id FROM to_update)
-                    """, (name, dt, classid, instanceid, asset_id, float_value, int_value)
-                    )
+                    self.cursor.execute(
+                        """
+                        WITH to_update AS (
+                            SELECT id
+                            FROM logs
+                            WHERE name = %s AND asset_id IS NULL
+                            ORDER BY placed_time ASC
+                            LIMIT 1
+                        )
+                        UPDATE logs
+                        SET order_complete = TRUE,
+                            time_removing_protection = %s,
+                            classid = %s,
+                            instanceid = %s,
+                            asset_id = %s,
+                            float_value = %s,
+                            int_pattern = %s
+                        WHERE id IN (SELECT id FROM to_update)
+                        """, (name, dt, classid, instanceid, asset_id, float_value, int_value)
+                        )
+                else:
+                    self.cursor.execute(
+                        """
+                        WITH to_update AS (
+                            SELECT id
+                            FROM logs
+                            WHERE name = %s AND asset_id IS NULL
+                            ORDER BY placed_time ASC
+                            LIMIT 1
+                        )
+                        UPDATE logs
+                        SET order_complete = TRUE,
+                            classid = %s,
+                            instanceid = %s,
+                            asset_id = %s,
+                            float_value = %s,
+                            int_pattern = %s
+                        WHERE id IN (SELECT id FROM to_update)
+                        """, (name, classid, instanceid, asset_id, float_value, int_value)
+                        )
             else:
-                self.cursor.execute(
-                    """
-                    WITH to_update AS (
-                        SELECT id
-                        FROM logs
-                        WHERE name = %s AND asset_id IS NULL
-                        ORDER BY placed_time ASC
-                        LIMIT 1
+                if name.strip() in skin_ids:
+                    skin_id = skin_ids[name]
+                    self.cursor.execute(
+                        """
+                        INSERT INTO logs (
+                            skin_id,
+                            name,
+                            y,
+                            classid,
+                            instanceid,
+                            asset_id,
+                            float_value,
+                            int_pattern,
+                            order_complete,
+                            from_outside
+                        )
+                        VALUES (%s, %s, 0, %s, %s, %s, %s, %s, TRUE, TRUE)
+                        """,
+                        (skin_id, name, classid, instanceid, asset_id, float_value, int_value)
                     )
-                    UPDATE logs
-                    SET order_complete = TRUE,
-                        classid = %s,
-                        instanceid = %s,
-                        asset_id = %s,
-                        float_value = %s,
-                        int_pattern = %s
-                    WHERE id IN (SELECT id FROM to_update)
-                    """, (name, classid, instanceid, asset_id, float_value, int_value)
-                    )
-        
+
 
 
     def get_logged_skins(self):
