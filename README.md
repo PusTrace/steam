@@ -1,3 +1,4 @@
+![Status](https://img.shields.io/badge/status-in%20development-yellow)
 # Steam Trading Bot
 
 Automated **Steam trading bot** for managing inventory, analyzing the market, and placing buy/sell orders.  
