@@ -131,7 +131,7 @@ class PostgreSQLDB:
                 bid_depth
             ) VALUES (
                 %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            )
+            ) RETURNING id
         """, (
             id,
             now,
@@ -341,13 +341,6 @@ class PostgreSQLDB:
             INSERT INTO order_events (name, price, amount, event_type, analysis_id)
             VALUES (%s, %s, %s, %s, %s)
         """, (skin_name, price, amount, 'BUY_PLACED', analysis_id))
-        self.commit()
-        
-    def external_sell(self, skin_name, price, amount, analysis_id):
-        self.cursor.execute("""
-            INSERT INTO order_events (name, price, amount, event_type, analysis_id)
-            VALUES (%s, %s, %s, %s, %s)
-        """, (skin_name, price, amount, 'LEGACY', analysis_id))
         self.commit()
 
     def insert_filled(self, new_event_type, skin_name, price, amount, analysis_id):

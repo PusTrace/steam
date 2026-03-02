@@ -341,7 +341,6 @@ class SteamMarketParser:
             return None
     
 
-
     def check_my_state(self) -> tuple[float, float, list[dict]]:
         """
         Возвращает данные своих ордеров на покупку и баланс.
@@ -350,9 +349,10 @@ class SteamMarketParser:
             (total_sum, my_wallet, my_buy_orders)
         """
         url = "https://steamcommunity.com/market/"
-
+         
         resp = self.session.get(
             url,
+            cookies={"ActListPageSize": "100"},
             timeout=15,
             allow_redirects=True,
         )
@@ -413,6 +413,54 @@ class SteamMarketParser:
                 "qty": qty
             })
 
+        sell_orders = []
+
+        # ===== SELL_ORDERS =====
+        my_sell_rows = soup.find_all("div", id=re.compile(r"^mylisting_\d+$"))
+
+        for row in my_sell_rows:
+            # ===== ORDER ID =====
+            full_id = row.get("id")           # "mylisting_792205646637449623"
+            order_id = full_id.split("_")[1] # "792205646637449623"
+
+            # ===== NAME =====
+            name_tag = row.select_one(".market_listing_item_name_link")
+            if not name_tag:
+                continue
+            skin_name = name_tag.get_text(strip=True)
+
+            # ===== DATE =====
+            date_tag = row.select_one(".market_listing_right_cell.market_listing_listed_date.can_combine")
+            date_text = date_tag.get_text(strip=True) if date_tag else ""
+
+            # ===== PRICE =====
+            price_tag = row.select_one(".market_listing_right_cell.market_listing_my_price")
+            if not price_tag:
+                continue
+
+            price_text = price_tag.get_text(strip=True)
+            # Убираем всё в скобках
+            price_text = re.sub(r"\(.*?\)", "", price_text)
+            
+            price_clean = (
+                price_text
+                .replace("₸", "")
+                .replace(" ", "")
+                .replace(",", ".")
+            )
+            price_match = re.search(r"\d+(\.\d+)?", price_clean)
+            if not price_match:
+                continue
+            price = float(price_match.group())
+
+            # ===== STORE RESULT =====
+            sell_orders.append({
+                "sell_order_id": order_id,
+                "name": skin_name,
+                "date": date_text,
+                "price": price,
+            })
+        
         # ===== WALLET =====
         wallet_tag = soup.select_one(".responsive_menu_user_wallet a")
         if wallet_tag:
@@ -422,11 +470,68 @@ class SteamMarketParser:
                 wallet_clean = match.group(1).replace(" ", "").replace(",", ".")
                 wallet_balance = float(wallet_clean)
 
-        
-        
 
-        return total_buyorders, wallet_balance, buy_orders
 
+        return total_buyorders, wallet_balance, buy_orders, sell_orders
+
+    def get_my_history(self):
+        url = "https://steamcommunity.com/market/myhistory/render/?query=&start=0&count=100"
+        resp = self.session.get(url, timeout=15, allow_redirects=True)
+        data = resp.json()
+
+        results_html = data.get("results_html")
+        assets = data.get("assets", {}).get("730", {}).get("2", {})
+
+        soup = BeautifulSoup(results_html, "html.parser")
+        history_rows = soup.select(".market_listing_row")
+
+        history = []
+
+        for row in history_rows:
+            # Ищем assetid в JS-ховере
+            img_elem = row.select_one("img[id$='_image']")
+            if not img_elem:
+                continue
+
+            # id img = history_row_XXX_YYY_image, берем последний аргумент из hovers
+            assetid = None
+            for asset_key, asset_val in assets.items():
+                if asset_val.get("icon_url") and asset_val["icon_url"].split("/")[-1] in img_elem["src"]:
+                    assetid = asset_key
+                    break
+
+            if not assetid or assetid not in assets:
+                print("NOT FOUND IN ASSETS:", assetid)
+                continue
+
+            asset_data = assets[assetid]
+            market_name = asset_data.get("market_hash_name")
+
+            price_elem = row.select_one(".market_listing_their_price .market_listing_price")
+            listed_date_elem = row.select(".market_listing_listed_date.can_combine")
+            gain_loss_elem = row.select_one(".market_listing_left_cell.market_listing_gainorloss")
+
+            price = None
+            if price_elem:
+                raw_price = price_elem.text.strip().split("(")[0]
+                raw_price = raw_price.replace("₸", "").replace(",", ".").replace(" ", "")
+                try:
+                    price = float(raw_price)
+                except ValueError:
+                    price = None
+
+            item = {
+                "assetid": assetid,
+                "name": market_name,
+                "price": price,
+                "acted_on": listed_date_elem[0].text.strip() if len(listed_date_elem) > 0 else None,
+                "listed_on": listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None,
+                "gain_or_loss": gain_loss_elem.text.strip() if gain_loss_elem else None
+            }
+
+            history.append(item)
+
+        return history
 
 if __name__ == "__main__":
     logging.getLogger(__name__).info("SteamMarketParser module loaded")

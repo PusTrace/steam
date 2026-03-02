@@ -6,6 +6,8 @@
 import sys
 import logging
 from pathlib import Path
+import time
+import random
 
 # добавляем корень проекта в PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -64,7 +66,65 @@ class PriceCalculator:
 
         return sell_price, margin_percent
 
+class SkinChecker:
+    def __init__(self, session, cookies, db, order_events, inventory):
+        self.session = session
+        self.cookies = cookies
+        self.db = db
+        
+        self.parser = SteamMarketParser(session, cookies, db)
+        
+        self.stats = {
+            "total": 0,
+            "skipped": 0,
+            "new_skins": 0,
+            "sold": 0,
+            "failed": 0
+        }
+        
+        self.order_events = order_events
+        if inventory: 
+            self.inventory = inventory
+        else:
+            self.inventory = self.parser.get_inventory()
+        total_orders, wallet, buy_orders, self.sell_orders = self.parser.check_my_state()
+        self.my_history = self.parser.get_my_history()
+        log.debug(f"myhistory: {self.my_history}")
+    
+    def run(self):
+        for raw in self.order_events:
+            if raw == 'BUY_FILLED':
+                location = self._find_in(raw, self.inventory, 0)
+                if location:
+                    log.info('skin in inventory')
+                else:
+                    log.error(f"{raw[1]} not found in inventory")
+        for raw in self.order_events:
+            if raw[0] == 'SELL_PLACED':
+                location = self._find_in(raw, self.sell_orders, 'name')
+                if location:
+                    next_location = False
+                    log.info('skin in sell_orders')
+                else:
+                    next_location = True
+                    log.debug(f"{raw[1]} not found in sell_orders table")
+                
+                if next_location:
+                    location = self._find_in(raw, self.my_history, 'name')
+                    if location:
+                        log.info('skin in my_history')
+                    else:
+                        log.error(f"{raw[1]} not found in sell_orders & my_history")
+        
 
+    @staticmethod
+    def _find_in(raw, where, index_name):
+        log.debug(f"name: {raw[1]}")
+        for item in where:
+            if item[index_name] == raw[1]:
+                return True
+        return False
+    
 # === Основная логика ===
 class SkinSeller:
     """Автоматическая продажа скинов из инвентаря"""
@@ -84,14 +144,16 @@ class SkinSeller:
             "failed": 0
         }
         
-        self.logger = logging.getLogger("sell_skins.SkinSeller")
+
         self.model = PTModel("EVA", db)
+        self.order_events = []
 
     def run(self) -> int:
         """Основная логика модуля"""
         log.info("Fetching inventory")
         
         inventory = self.parser.get_inventory()
+        self.inventory = inventory
         
         if inventory is None:
             log.critical("Failed to fetch inventory")
@@ -177,7 +239,7 @@ class SkinSeller:
             processing_data, _, analysis_id = self.model.processing(history=history, buy_orders=buy_orders, sell_orders=sell_orders, skin=skin_data)
             
             if buy_price is not None:
-                self.db.insert_filled('BUY_FILLED', skin_name, buy_price, 1, analysis_id)
+                self.order_events.append(['BUY_FILLED', skin_name, buy_price, 1, analysis_id])
             
             avg_week = processing_data[3]
             avg_sell_price = processing_data[8]
@@ -212,9 +274,9 @@ class SkinSeller:
         
         if success:
             if buy_price is None:
-                self.db.external_sell(skin_name, sell_price, 1, analysis_id)
+                log.warning("buy_price is None legacy sell")
             else:
-                self.db.insert_filled('SELL_PLACED', skin_name, sell_price, 1, analysis_id)
+                self.order_events.append(['SELL_PLACED', skin_name, sell_price, 1, analysis_id, margin])
             log.info(f"Listed successfully: {skin_name}")
             self.stats["sold"] += 1
         else:
@@ -261,10 +323,19 @@ def main():
         # создаём и запускаем модуль
         seller = SkinSeller(session, cookies, db)
         exit_code = seller.run()
+        inventory = seller.inventory
         
         db.close()
         
-        log.info(f"Module finished with exit code {exit_code}")
+        log.info(f"SkinSeller finished with exit code {exit_code}")
+        
+        time.sleep(random.uniform(3, 6))
+        
+        order_events = seller.order_events
+        log.info(f"order_events: {order_events}")
+        if len(order_events) > 0:
+            checker = SkinChecker(session, cookies, db, order_events, inventory)
+            checker.run()
         sys.exit(exit_code)
         
     except KeyboardInterrupt:

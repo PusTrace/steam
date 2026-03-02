@@ -36,7 +36,7 @@ class OrderPlacer:
         
     def should_run(self) -> tuple[bool, str]:
         """Проверяем, есть ли смысл запускаться"""
-        total_orders, wallet, my_orders = self.parser.check_my_state()
+        total_orders, wallet, my_orders, sell_orders = self.parser.check_my_state()
         
         my_orders_names = [a.get('name') for a in my_orders]
         
