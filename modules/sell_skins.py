@@ -221,7 +221,7 @@ class SkinSeller:
         
         if success:
             if not is_legacy:
-                self.order_events.append(['SELL_PLACED', skin_name, sell_price, 1, analysis_id])
+                self.order_events.append(['SELL_PLACED', skin_name, round(sell_price *0.87), 1, analysis_id])
             else:
                 log.warning(f"legacy_sell: {skin_name}")
             log.info(f"Listed successfully: {skin_name}")
