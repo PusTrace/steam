@@ -370,3 +370,96 @@ class PostgreSQLDB:
             VALUES (%s, %s, %s, %s, %s)
         """, (parent_id, new_event_type, amount, price, analysis_id))
         self.commit()
+
+    def insert_my_history(self, my_history):
+        try:
+            self.cursor.execute("BEGIN")
+
+            self.cursor.executemany("""
+                INSERT INTO history_validator (
+                    asset_id,
+                    name,
+                    price,
+                    acted_on,
+                    listed_on,
+                    gain_or_loss
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT DO NOTHING
+            """, my_history)
+
+            self.commit()
+
+        except Exception as e:
+            self.conn.rollback()
+            print(f"DB insert error: {e}")
+            # do nothing
+    
+    def get_sell_placed_events(self):
+        self.cursor.execute("""
+            SELECT
+                bp.id AS buy_placed_id,
+                bp.name,
+                SUM(sp.amount) - COALESCE(SUM(sf.amount), 0) AS remaining_amount
+            FROM order_events bp
+            JOIN order_events sp
+            ON sp.parent_id = bp.id
+            AND sp.event_type = 'SELL_PLACED'
+            LEFT JOIN order_events sf
+            ON sf.parent_id = bp.id
+            AND sf.event_type = 'SELL_FILLED'
+            AND sf.name = bp.name
+            WHERE bp.event_type = 'BUY_PLACED'
+            GROUP BY bp.id, bp.name
+            HAVING (SUM(sp.amount) - COALESCE(SUM(sf.amount), 0)) > 0;
+        """)
+        return self.cursor.fetchall()
+    
+    def get_skins_without_price(self, skins):
+        skin_names = tuple(skin for skin in skins)
+        self.cursor.execute("""
+            SELECT 
+                *
+            FROM skins
+            WHERE name IN %s
+        """, (skin_names,))
+
+        return self.cursor.fetchall()
+    
+    
+    def insert_filled_bulk(self, events):
+        """
+        events: список кортежей (new_event_type, skin_name, price, amount, analysis_id)
+        new_event_type: 'BUY_FILLED' | 'SELL_PLACED' | 'SELL_FILLED'
+        """
+        insert_rows = []
+        
+        for item in events:
+            new_event_type, skin_name, price, amount, analysis_id = item
+            # ищем подходящий BUY_PLACED
+            self.cursor.execute("""
+                SELECT p.id, p.amount - COALESCE(SUM(f.amount),0) AS remaining
+                FROM order_events p
+                LEFT JOIN order_events f
+                ON f.parent_id = p.id AND f.event_type = %s
+                WHERE p.event_type = %s AND p.name = %s
+                GROUP BY p.id, p.amount
+                HAVING (p.amount - COALESCE(SUM(f.amount),0)) >= %s
+                ORDER BY p.created_at
+                LIMIT 1
+            """, (new_event_type, 'BUY_PLACED', skin_name, amount))
+
+            row = self.cursor.fetchone()
+            if not row:
+                raise Exception(f"No available BUY_PLACED with enough remaining amount for {skin_name}")
+
+            parent_id = row[0]
+
+            insert_rows.append((parent_id, new_event_type, amount, price, analysis_id, skin_name))
+
+        # массовая вставка
+        self.cursor.executemany("""
+            INSERT INTO order_events (parent_id, event_type, amount, price, analysis_id, name)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, insert_rows)
+
+        self.commit()

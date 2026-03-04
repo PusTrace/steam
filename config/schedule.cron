@@ -1,0 +1,12 @@
+
+# Трейдинг-бот Steam Market
+
+0 12 1 * * /home/pustrace/steam/venv/bin/python /home/pustrace/steam/modules/soft_parser.py
+
+0 11 * * * /home/pustrace/steam/venv/bin/python /home/pustrace/steam/core/steam/cookies.py
+
+0 12 * * * /home/pustrace/steam/venv/bin/python /home/pustrace/steam/modules/sell_skins.py
+
+0 13 * * * /home/pustrace/steam/venv/bin/python /home/pustrace/steam/modules/SkinChecker.py
+
+0 12 */5 * * /home/pustrace/steam/venv/bin/python /home/pustrace/steam/modules/place_orders.py

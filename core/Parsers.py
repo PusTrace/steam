@@ -2,7 +2,7 @@
 import requests, logging
 import time
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from typing import Optional, List, Tuple, Dict, Any
 import urllib3
 import re
@@ -474,34 +474,32 @@ class SteamMarketParser:
 
         return total_buyorders, wallet_balance, buy_orders, sell_orders
 
-    def get_my_history(self):
-        url = "https://steamcommunity.com/market/myhistory/render/?query=&start=0&count=100"
+
+    def get_my_history(self, start=0, step=100):
+        url = f"https://steamcommunity.com/market/myhistory/render/?query=&start={start}&count={step}"
         resp = self.session.get(url, timeout=15, allow_redirects=True)
         data = resp.json()
 
         results_html = data.get("results_html")
         assets = data.get("assets", {}).get("730", {}).get("2", {})
+        total_count = data.get("total_count")
 
         soup = BeautifulSoup(results_html, "html.parser")
         history_rows = soup.select(".market_listing_row")
 
-        history = []
+        history_items = []
 
         for row in history_rows:
-            # Ищем assetid в JS-ховере
             img_elem = row.select_one("img[id$='_image']")
             if not img_elem:
                 continue
 
-            # id img = history_row_XXX_YYY_image, берем последний аргумент из hovers
             assetid = None
             for asset_key, asset_val in assets.items():
                 if asset_val.get("icon_url") and asset_val["icon_url"].split("/")[-1] in img_elem["src"]:
                     assetid = asset_key
                     break
-
             if not assetid or assetid not in assets:
-                print("NOT FOUND IN ASSETS:", assetid)
                 continue
 
             asset_data = assets[assetid]
@@ -520,18 +518,21 @@ class SteamMarketParser:
                 except ValueError:
                     price = None
 
-            item = {
-                "assetid": assetid,
-                "name": market_name,
-                "price": price,
-                "acted_on": listed_date_elem[0].text.strip() if len(listed_date_elem) > 0 else None,
-                "listed_on": listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None,
-                "gain_or_loss": gain_loss_elem.text.strip() if gain_loss_elem else None
-            }
+            gain_loss = True if gain_loss_elem and gain_loss_elem.text.strip() == '+' else False
 
-            history.append(item)
+            acted_on_str = listed_date_elem[0].text.strip() if len(listed_date_elem) > 0 else None
+            listed_on_str = listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None
 
-        return history
+            history_items.append([
+                assetid,
+                market_name,
+                price,
+                acted_on_str,
+                listed_on_str,
+                gain_loss
+            ])
+
+        return history_items, total_count
 
 if __name__ == "__main__":
     logging.getLogger(__name__).info("SteamMarketParser module loaded")

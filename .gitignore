@@ -4,5 +4,5 @@
 .vscode
 **/venv/
 logs/*
-config/*
-config/
+config/cookies.json
+config/sda.json
