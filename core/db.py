@@ -472,12 +472,13 @@ class PostgreSQLDB:
                 SELECT COALESCE(parent_id, id)
                 FROM order_events
                 GROUP BY COALESCE(parent_id, id)
-                HAVING
+                HAVING 
                     BOOL_OR(event_type = 'BUY_PLACED')
-                AND BOOL_OR(event_type = 'BUY_FILLED')
-                AND BOOL_OR(event_type = 'SELL_PLACED')
-                AND BOOL_OR(event_type = 'SELL_FILLED')
-            ) AND created_at > %s
+                    AND BOOL_OR(event_type = 'BUY_FILLED')
+                    AND BOOL_OR(event_type = 'SELL_PLACED')
+                    AND BOOL_OR(event_type = 'SELL_FILLED')
+                    AND MAX(CASE WHEN event_type = 'SELL_FILLED' THEN created_at END) > %s
+            )
             ORDER BY COALESCE(parent_id, id), created_at;
             """, (from_date, ))
         return self.cursor.fetchall()
