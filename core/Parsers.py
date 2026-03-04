@@ -476,6 +476,11 @@ class SteamMarketParser:
 
 
     def get_my_history(self, start=0, step=100):
+        """
+        Docstring for get_my_history
+        
+        Returns: (assetid, market_name, price, acted_on_str, listed_on_str, gain_loss)
+        """
         url = f"https://steamcommunity.com/market/myhistory/render/?query=&start={start}&count={step}"
         resp = self.session.get(url, timeout=15, allow_redirects=True)
         data = resp.json()
@@ -523,14 +528,7 @@ class SteamMarketParser:
             acted_on_str = listed_date_elem[0].text.strip() if len(listed_date_elem) > 0 else None
             listed_on_str = listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None
 
-            history_items.append([
-                assetid,
-                market_name,
-                price,
-                acted_on_str,
-                listed_on_str,
-                gain_loss
-            ])
+            history_items.append([assetid, market_name, price, acted_on_str, listed_on_str, gain_loss])
 
         return history_items, total_count
 

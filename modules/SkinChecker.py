@@ -35,7 +35,13 @@ class SkinChecker:
         else:
             self.inventory = self.parser.get_inventory()
         total_orders, wallet, buy_orders, self.sell_orders = self.parser.check_my_state()
-        self.my_history, _ = self.parser.get_my_history()
+        raw_my_history, _ = self.parser.get_my_history()
+        my_history = []
+        for string in raw_my_history:
+            if not string[5]:
+                my_history.append(string)
+        
+        self.my_history = my_history
         
         self.buy_filled_arr = []
         self.sell_placed_arr = []

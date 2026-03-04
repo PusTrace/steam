@@ -463,3 +463,21 @@ class PostgreSQLDB:
         """, insert_rows)
 
         self.commit()
+        
+    def get_full_transaction(self, from_date='2026-03-04'):
+        self.cursor.execute("""
+            SELECT *
+            FROM order_events
+            WHERE COALESCE(parent_id, id) IN (
+                SELECT COALESCE(parent_id, id)
+                FROM order_events
+                GROUP BY COALESCE(parent_id, id)
+                HAVING
+                    BOOL_OR(event_type = 'BUY_PLACED')
+                AND BOOL_OR(event_type = 'BUY_FILLED')
+                AND BOOL_OR(event_type = 'SELL_PLACED')
+                AND BOOL_OR(event_type = 'SELL_FILLED')
+            ) AND created_at > %s
+            ORDER BY COALESCE(parent_id, id), created_at;
+            """, (from_date, ))
+        return self.cursor.fetchall()
