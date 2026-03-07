@@ -20,7 +20,7 @@ from core.steam.sell import sell_skin
 from core.steam.confirmation import accept_all_confirmations
 from core.steam.cookies import get_identity_secret
 from analysis.strategies import PTModel
-
+from modules.soft_parser import SoftParser
 
 log = logging.getLogger("sell_skins")
 
@@ -279,12 +279,17 @@ def main():
         time.sleep(sleep_time)
         
         order_events = seller.order_events
-        log.info(f"order_events: {order_events}")
         if len(order_events) > 0:
             checker = SkinChecker(session, cookies, db, order_events, inventory)
             checker.run()
-        sys.exit(exit_code)
         
+        parser = SoftParser(session=session, cookies=cookies, db=db)
+        
+        sleep_time = random.uniform(3, 6)
+        log.info(f"sleep bef start SoftParser: {round(sleep_time)}")
+        log.info("Running item_nameid update")
+        exit_code = parser.run_update_item_nameids()
+    
         db.close()
         log.info(f"SkinChecker finished with exit code {exit_code}")
     except KeyboardInterrupt:
@@ -294,6 +299,8 @@ def main():
     except Exception as e:
         log.critical(f"Fatal error: {e}", exc_info=True)
         sys.exit(1)
+    finally:
+        sys.exit(0)
 
 
 if __name__ == "__main__":

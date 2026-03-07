@@ -76,8 +76,9 @@ class SoftParser:
     def run_update_item_nameids(self) -> int:
         """Обновляет item_nameid для скинов через Playwright"""
         log.info("Fetching skins without item_nameid")
-        
+
         skins = self.db.get_skins_without_item_nameid()
+
         self.stats["total"] = len(skins)
         
         log.info(f"Found {len(skins)} skins without item_nameid")
@@ -155,7 +156,7 @@ class SoftParser:
         log.info(f"[{idx}/{self.stats['total']}] Processing: {skin_name}")
         
         try:
-            item_name_id, avg_price = get_item_nameid_with_page(
+            item_name_id, _ = get_item_nameid_with_page(
                 skin_name=skin_name,
                 page=page
             )
@@ -168,8 +169,6 @@ class SoftParser:
                 
             elif item_name_id == -1:
                 log.warning(f"Skin doesn't exist: {skin_name}")
-                self.db.remove_skin(skin_name)
-                self.db.commit()
                 self.stats["skipped"] += 1
                 
             else:
