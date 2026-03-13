@@ -29,7 +29,7 @@ def init_environment():
     })
     
     # подключаемся к БД
-    db = PostgreSQLDB(host="192.168.88.50",password=os.getenv("DEFAULT_PASSWORD"))
+    db = PostgreSQLDB(host=os.getenv("DB_HOST"),password=os.getenv("DEFAULT_PASSWORD"))
     
     return session, cookies, db
 
