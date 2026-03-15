@@ -3,6 +3,7 @@ import sys
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
+import time
 import requests, os
 from collections import defaultdict
 
@@ -51,6 +52,7 @@ class SendStatistics:
             from_date = now - timedelta(hours=lagging_day*24)
             inf = self.db.get_full_transaction(from_date)
             text = self.summarize_transactions(inf, from_date)
+
             if text is not None:
                 self.send_message_telegram(text)
 
@@ -151,14 +153,22 @@ class SendStatistics:
         parts.append(f"{minutes}m")
         return " ".join(parts)
     
+
     def send_message_telegram(self, text):
+
         tg_chat_ids = os.getenv('TG_CHAT_IDS')
         chat_ids = [cid.strip() for cid in tg_chat_ids.split(",") if cid.strip()]
         token = os.getenv("TG_BOT_TOKEN")
+
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+
+        session = requests.Session()
+
         for chat_id in chat_ids:
             try:
-                requests.post(
-                    f"https://api.telegram.org/bot{token}/sendMessage",
+
+                response = session.post(
+                    url,
                     json={
                         "chat_id": chat_id,
                         "text": text
@@ -166,8 +176,15 @@ class SendStatistics:
                     timeout=5,
                     proxies=proxies
                 )
+
+                if response.status_code != 200:
+                    log.error(f"telegram error {response.status_code}: {response.text}")
+
+                # rate limit
+                time.sleep(0.1)
+
             except Exception as e:
-                log.error(f"error: {e}")
+                log.error(f"telegram send error: {e}")
 
 
 def main():
