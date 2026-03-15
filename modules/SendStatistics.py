@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 import requests, os
+from collections import defaultdict
 
 # добавляем корень проекта в PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -19,6 +20,10 @@ from analysis.strategies import PTModel
 
 log = logging.getLogger("SendStatistics")
 
+proxies = {
+    "http": "http://127.0.0.1:2080",
+    "https": "http://127.0.0.1:2080"
+}
 
 
     
@@ -34,54 +39,100 @@ class SendStatistics:
     def run(self) -> int:
         """Основная логика модуля"""
         log.info("Fetching 24h information")
-        now = datetime.now()
-        from_date = now - timedelta(hours=24)
-        inf = self.db.get_full_transaction(from_date)
-        text = self.summarize_transactions(inf)
-        if text is not None:
-            self.send_message_telegram(text)
         
-    def summarize_transactions(self, events):
+        lagging_array = os.getenv('LAGGING_DAYS')
+        if lagging_array:
+            lagging_days = [cid.strip() for cid in lagging_array.split(",") if cid.strip()]
+        else:
+            lagging_days = ["1"]
+        now = datetime.now()
+        for lagging_day in lagging_days:
+            lagging_day = int(lagging_day) 
+            from_date = now - timedelta(hours=lagging_day*24)
+            inf = self.db.get_full_transaction(from_date)
+            text = self.summarize_transactions(inf, from_date)
+            if text is not None:
+                self.send_message_telegram(text)
+
+ 
+    def summarize_transactions(self, events, from_date):
+
+        from_date = from_date + timedelta(days=1)
+        full_blocks = f"💰{from_date} transactions:\n\n"
+
+        groups = defaultdict(list)
+
+        # группируем события по transaction id
+        for e in events:
+            tx = e[1] if e[1] else e[0]
+            groups[tx].append(e)
+
+        transactions = []
+
+        for tx, evs in groups.items():
+
+            evs.sort(key=lambda x: x[5])  # сортировка по created_at
+
+            buy_placed = None
+            buy_filled = []
+            sell_placed = []
+            sell_filled = []
+
+            for e in evs:
+                if e[2] == "BUY_PLACED":
+                    buy_placed = e
+                elif e[2] == "BUY_FILLED":
+                    buy_filled.append(e)
+                elif e[2] == "SELL_PLACED":
+                    sell_placed.append(e)
+                elif e[2] == "SELL_FILLED":
+                    sell_filled.append(e)
+
+            # пропускаем если нет sell
+            if not sell_filled or not sell_placed or not buy_filled:
+                continue
+
+            count = len(sell_filled)
+            for i in range(count):
+
+                if i >= len(buy_filled) or i >= len(sell_placed):
+                    continue
+                bf = buy_filled[i]
+                sf = sell_filled[i]
+                sp = sell_placed[i] if i < len(sell_placed) else sell_placed[-1]
+
+                price_diff = sf[4] - bf[4]
+                percent_diff = (price_diff / bf[4]) * 100
+
+                buy_duration = bf[5] - buy_placed[5]
+                sell_duration = sf[5] - sp[5]
+
+                transactions.append({
+                    "name": bf[7],
+                    "price_diff": price_diff,
+                    "percent_diff": percent_diff,
+                    "buy_duration": self.format_duration(buy_duration),
+                    "sell_duration": self.format_duration(sell_duration),
+                    "analysis_ids": [buy_placed[6], bf[6], sp[6], sf[6]],
+                        "time": sf[5]
+                    })
+
+        # сортировка транзакций по времени продажи
+        transactions.sort(key=lambda x: x["time"])
+        if len(transactions) == 0:
+            full_blocks = ""
+        else:
+            for t in transactions:
+                block = f"""{t['name']}
+        price diff: {t['price_diff']:.2f}
+        percent diff: {t['percent_diff']:.2f}%
+        durations: buy={t['buy_duration']}, sell={t['sell_duration']}
+        analysis ids: {', '.join(map(str, t['analysis_ids']))}
+
         """
-        events — список кортежей:
-        (id, parent_id, event_type, amount, price, created_at, analysis_id, name)
-        Каждая сделка = 4 строки подряд: BUY_PLACED, BUY_FILLED, SELL_PLACED, SELL_FILLED
-        """
-        if len(events) < 4:
-            return None
-        full_blocks = """💰Today transactions(24h):\n\n"""
-        for i in range(0, len(events), 4):
-            batch = events[i:i+4]
-            if len(batch) < 4:
-                continue  # на всякий случай
-            
-            buy_placed, buy_filled, sell_placed, sell_filled = batch
+                full_blocks += block
 
-            name = buy_placed[7]
-
-            # Разницы по цене
-            price_diff = sell_filled[4] - buy_filled[4]
-            percent_diff = (price_diff / buy_filled[4]) * 100
-
-            # Разницы по времени
-            buy_duration = buy_filled[5] - buy_placed[5]
-            sell_duration = sell_filled[5] - sell_placed[5]
-            
-            buy_duration_str = self.format_duration(buy_duration)
-            sell_duration_str = self.format_duration(sell_duration)
-            # analysis_id всех событий
-            analysis_ids = [buy_placed[6], buy_filled[6], sell_placed[6], sell_filled[6]]
-
-            # build block
-            block = f"""{name}
-  Price diff: {price_diff:.2f}
-  Percent diff: {percent_diff:.2f}%
-  Durations: buy={buy_duration_str}, sell={sell_duration_str}
-  Analysis IDs: {', '.join(str(a) for a in analysis_ids)}\n
-            """
-            full_blocks += block
         return full_blocks
-    
     @staticmethod
     def format_duration(td):
         """
@@ -112,7 +163,8 @@ class SendStatistics:
                         "chat_id": chat_id,
                         "text": text
                     },
-                    timeout=5
+                    timeout=5,
+                    proxies=proxies
                 )
             except Exception as e:
                 log.error(f"error: {e}")

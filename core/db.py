@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extras import Json, DictCursor
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 def normalize_date(raw_date):
     """Преобразует дату (строку ISO или datetime) в UTC-aware datetime, округлённый до часа."""
@@ -464,7 +464,8 @@ class PostgreSQLDB:
 
         self.commit()
         
-    def get_full_transaction(self, from_date='2026-03-04'):
+    def get_full_transaction(self, from_date):
+        to_date = from_date + timedelta(days=1)
         self.cursor.execute("""
             SELECT *
             FROM order_events
@@ -477,8 +478,9 @@ class PostgreSQLDB:
                     AND BOOL_OR(event_type = 'BUY_FILLED')
                     AND BOOL_OR(event_type = 'SELL_PLACED')
                     AND BOOL_OR(event_type = 'SELL_FILLED')
-                    AND MAX(CASE WHEN event_type = 'SELL_FILLED' THEN created_at END) > %s
+                    AND MAX(CASE WHEN event_type = 'SELL_FILLED' THEN created_at END) 
+                    BETWEEN %s AND %s
             )
             ORDER BY COALESCE(parent_id, id), created_at;
-            """, (from_date, ))
+            """, (from_date, to_date))
         return self.cursor.fetchall()
