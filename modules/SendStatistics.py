@@ -125,13 +125,13 @@ class SendStatistics:
             full_blocks = ""
         else:
             for t in transactions:
-                block = f"""{t['name']}
-        price diff: {t['price_diff']:.2f}
-        percent diff: {t['percent_diff']:.2f}%
-        durations: buy={t['buy_duration']}, sell={t['sell_duration']}
-        analysis ids: {', '.join(map(str, t['analysis_ids']))}
-
-        """
+                block = (
+                    f"{t['name']}\n"
+                    f"    price diff: {t['price_diff']:.2f}\n"
+                    f"    percent diff: {t['percent_diff']:.2f}%\n"
+                    f"    durations: buy={t['buy_duration']}, sell={t['sell_duration']}\n"
+                    f"    analysis ids: {', '.join(map(str, t['analysis_ids']))}\n\n"
+                )
                 full_blocks += block
 
         return full_blocks
@@ -178,7 +178,12 @@ class SendStatistics:
                 )
 
                 if response.status_code != 200:
-                    log.error(f"telegram error {response.status_code}: {response.text}")
+                    msg_empty = response.json()
+                    msg_empty = msg_empty.get("description")
+                    if msg_empty == "Bad Request: message text is empty":
+                        log.debug(msg_empty)
+                    else:
+                        log.error(f"telegram error {response.status_code}: {response.text}")
 
                 # rate limit
                 time.sleep(0.1)
