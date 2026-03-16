@@ -396,23 +396,39 @@ class PostgreSQLDB:
     
     def get_sell_placed_events(self):
         self.cursor.execute("""
+            WITH buy_summary AS (
+                SELECT
+                    bp.id AS buy_placed_id,
+                    bp.name,
+                    bp.amount AS buy_placed_amount
+                FROM order_events bp
+                WHERE bp.event_type = 'BUY_PLACED'
+            ),
+            sell_placed_summary AS (
+                SELECT parent_id AS buy_placed_id, SUM(amount) AS sell_placed_amount
+                FROM order_events
+                WHERE event_type = 'SELL_PLACED'
+                GROUP BY parent_id
+            ),
+            sell_filled_summary AS (
+                SELECT parent_id AS buy_placed_id, SUM(amount) AS sell_filled_amount
+                FROM order_events
+                WHERE event_type = 'SELL_FILLED'
+                GROUP BY parent_id
+            )
             SELECT
-                bp.id AS buy_placed_id,
-                bp.name,
-                SUM(sp.amount) - COALESCE(SUM(sf.amount), 0) AS remaining_amount
-            FROM order_events bp
-            JOIN order_events sp
-            ON sp.parent_id = bp.id
-            AND sp.event_type = 'SELL_PLACED'
-            LEFT JOIN order_events sf
-            ON sf.parent_id = bp.id
-            AND sf.event_type = 'SELL_FILLED'
-            AND sf.name = bp.name
-            WHERE bp.event_type = 'BUY_PLACED'
-            GROUP BY bp.id, bp.name
-            HAVING (SUM(sp.amount) - COALESCE(SUM(sf.amount), 0)) > 0;
+                b.buy_placed_id,
+                b.name,
+                COALESCE(sfs.sell_filled_amount,0) AS sell_filled_amount,
+                COALESCE(sps.sell_placed_amount,0) - COALESCE(sfs.sell_filled_amount,0) AS remaining_to_sell
+            FROM buy_summary b
+            LEFT JOIN sell_placed_summary sps ON sps.buy_placed_id = b.buy_placed_id
+            LEFT JOIN sell_filled_summary sfs ON sfs.buy_placed_id = b.buy_placed_id
+            WHERE COALESCE(sps.sell_placed_amount,0) - COALESCE(sfs.sell_filled_amount,0) > 0;
+
         """)
-        return self.cursor.fetchall()
+        return self.cursor.fetchall() # buy_placed_id, name, sell_filled_amount, remaining_to_sell
+    
     
     def get_skins_without_price(self, skins):
         skin_names = tuple(skin for skin in skins)

@@ -85,7 +85,7 @@ class SkinChecker:
         
     def _build_sell_filled(self, dict_sell_filled):
         skin_data = self.db.get_skins_without_price(dict_sell_filled)
-
+        log.debug(f"skin_data: {skin_data}")
         for raw in skin_data:
             self.parser.load_skin(raw)
             history, buy_orders, sell_orders = self.parser.get_data()
@@ -95,25 +95,38 @@ class SkinChecker:
             my_history_raw = dict_sell_filled.get(name)
             price = my_history_raw[2]
             
-            
-        
             sell_filled_str = ["SELL_FILLED", name, price, 1, analysis_id]
             self.sell_filled_arr.append(sell_filled_str)
     
+                
     def _check_old_items(self):
         sell_placed_events = self.db.get_sell_placed_events()
+        log.debug(f"sell_placed_events: {sell_placed_events}")
+
         dict_sell_filled = {}
-        
+
         for raw in sell_placed_events:
-            loc, my_history_raw = self._find_in(raw, self.my_history, 1)
-            log.debug(f"my_history_raw: {my_history_raw}")
-            if loc:
-                dict_sell_filled[raw[1]] = my_history_raw
-            else:
-                log.debug("item is not filled")
-        
+            _ , name, sell_filled_amount, remaining_to_sell = raw
+
+            # идём по истории и отнимаем уже учтённые sell_filled_amount
+            for entry in self.my_history:
+                if entry[1] != name:
+                    continue
+
+                if sell_filled_amount > 0:
+                    sell_filled_amount -= 1
+                    continue  # эта запись уже учтена как заполненная
+
+                if remaining_to_sell <= 0:
+                    continue 
+                # формируем запись для вставки
+                dict_sell_filled[name] = entry
+                remaining_to_sell -= 1
+                sell_filled_amount += 1  # чтобы следующая запись истории знала, что эту единицу учли
+
+                log.debug(f"Adding {name} from history with price {entry[2]}. Remaining to sell: {remaining_to_sell}")
+
         return dict_sell_filled
-                
         
     
     def _check_new_items(self):
@@ -150,11 +163,13 @@ class SkinChecker:
                         log.error(f"{raw[1]} not found in sell_orders & my_history")
     
     def _print_summary(self):
-        log.info(f"BUY_FILLED:      {self.stats['BUY_FILLED']}")
-        log.info(f"SELL_PLACED:     {self.stats['SELL_PLACED']}")
-        log.info(f"SELL_FILLED:     {self.stats['SELL_FILLED']}")
-        log.info(f"Skipped:         {self.stats['SKIPPED']}")
-
+        log.info(f"BUY_FILLED:       {self.stats['BUY_FILLED']}")
+        log.info(f"SELL_PLACED:      {self.stats['SELL_PLACED']}")
+        log.info(f"SELL_FILLED:      {self.stats['SELL_FILLED']}")
+        log.info(f"Skipped:          {self.stats['SKIPPED']}")
+        log.debug(f"buy_filled_arr:  {self.buy_filled_arr}")
+        log.debug(f"sell_placed_arr: {self.sell_placed_arr}")
+        log.debug(f"sell_filled_arr: {self.sell_filled_arr}")
 
     @staticmethod
     def _find_in(raw, where, index_name):
