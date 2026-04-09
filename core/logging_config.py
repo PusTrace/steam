@@ -12,7 +12,6 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from dotenv import load_dotenv
 
-
 class TelegramHandler(logging.Handler):
     """
     Отправляет ERROR и CRITICAL в телеграм
@@ -25,7 +24,11 @@ class TelegramHandler(logging.Handler):
         self.module_name = module_name
         self.timeout = timeout
         self.api_url = f"https://api.telegram.org/bot{token}/sendMessage"
-    
+        self.proxies = {
+            "http": "http://127.0.0.1:2080",
+            "https": "http://127.0.0.1:2080"
+        }
+
     def emit(self, record: logging.LogRecord):
         try:
             msg = self.format(record)
@@ -45,7 +48,8 @@ class TelegramHandler(logging.Handler):
                         "text": text,
                         "parse_mode": "Markdown"
                     },
-                    timeout=self.timeout
+                    timeout=self.timeout,
+                    proxies=self.proxies
                 )
         except Exception:
             # логгер никогда не должен валить приложение
