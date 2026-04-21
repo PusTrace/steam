@@ -22,24 +22,26 @@ class SteamMarketParser:
     ORDERS_CACHE_DAYS = 1
     PRICES_CACHE_DAYS = 3
     MAX_RETRIES = 5
-    RETRY_DELAY_RANGE = (60*60, 60*60*2)
+    RETRY_DELAY_RANGE = (60 * 60, 60 * 60 * 2)
 
     BASE_HEADERS = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/118.0.5993.118 Safari/537.36",
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/118.0.5993.118 Safari/537.36",
         "Accept": "application/json",
         "Accept-Language": "en-US,en;q=0.9",
         "Accept-Encoding": "gzip, deflate, br",
     }
 
-    def __init__(self, session: requests.Session, cookies: dict, db, loud_mode: bool = False):
+    def __init__(
+        self, session: requests.Session, cookies: dict, db, loud_mode: bool = False
+    ):
         self.session = session
         self.session.cookies.update(cookies)
         self.db = db
 
         self.logger = logging.getLogger(__name__)
-        
+
         self.skin_id: Optional[int] = None
         self.name: Optional[str] = None
         self.item_name_id: Optional[int] = None
@@ -54,14 +56,40 @@ class SteamMarketParser:
     def load_skin(self, skin_info: Tuple) -> None:
         len_skin_info = len(skin_info)
         if len_skin_info == 7:
-            self.skin_id, self.name, self.analysis_timestamp, self.appearance_date, self.item_name_id, self.orders_timestamp, self.history_timestamp = skin_info
+            (
+                self.skin_id,
+                self.name,
+                self.history_timestamp,
+                self.appearance_date,
+                self.item_name_id,
+                self.orders_timestamp,
+                self.history_timestamp,
+            ) = skin_info
         elif len_skin_info == 8:
-            self.skin_id, self.name, self.analysis_timestamp, self.appearance_date, self.item_name_id, self.orders_timestamp, self.history_timestamp, self.buy_price = skin_info
+            (
+                self.skin_id,
+                self.name,
+                self.history_timestamp,
+                self.appearance_date,
+                self.item_name_id,
+                self.orders_timestamp,
+                self.history_timestamp,
+        self.buy_price,
+            ) = skin_info
+        elif len_skin_info == 5:
+            (
+                self.skin_id,
+                self.name,
+                self.orders_timestamp,
+                self.history_timestamp,
+                self.item_name_id
+            ) = skin_info
         else:
-            self.logger.error(f"len of skin_info unexpected {len_skin_info}, expected 7 or 8")
+            self.logger.error(
+                f"len of skin_info unexpected {len_skin_info}, expected 7 or 8"
+            )
 
         self.logger.debug(f"skin_info: {skin_info}")
-        
 
     def _retry_request(self, func, *args, **kwargs) -> Any:
         for attempt in range(self.MAX_RETRIES):
@@ -69,17 +97,17 @@ class SteamMarketParser:
                 return func(*args, **kwargs)
             except requests.RequestException as e:
                 if attempt == self.MAX_RETRIES - 1:
-                    self.logger.error(
-                        f"Failed after {self.MAX_RETRIES} attempts: {e}"
-                    )
+                    self.logger.error(f"Failed after {self.MAX_RETRIES} attempts: {e}")
 
                 delay = random.uniform(*self.RETRY_DELAY_RANGE)
                 self.logger.warning(
                     "Request failed (attempt %s/%s): %s. Retry in %.2fs",
-                    attempt + 1, self.MAX_RETRIES, e, delay
+                    attempt + 1,
+                    self.MAX_RETRIES,
+                    e,
+                    delay,
                 )
                 time.sleep(delay)
-        
 
     def _fetch_orders(self) -> Dict:
         if not self.item_name_id:
@@ -91,7 +119,7 @@ class SteamMarketParser:
             "language": "english",
             "currency": 37,
             "item_nameid": self.item_name_id,
-            "norender": 1
+            "norender": 1,
         }
 
         def make_request():
@@ -129,7 +157,9 @@ class SteamMarketParser:
 
             # Проверка на наличие user_info (признак залогиненного юзера)
             if not re.search(r'class="user_info"', html):
-                self.logger.error("Cookies are invalid or not authorized (user_info not found)")
+                self.logger.error(
+                    "Cookies are invalid or not authorized (user_info not found)"
+                )
 
             match = re.search(r"var\s+line1\s*=\s*(\[[\s\S]*?\]);", html)
             if not match:
@@ -141,7 +171,6 @@ class SteamMarketParser:
                 self.logger.error(f"Failed to parse price history JS array: {e}")
 
             return self._parse_price_history(raw_prices)
-
 
         return self._retry_request(make_request)
 
@@ -160,12 +189,12 @@ class SteamMarketParser:
 
                 parsed.append([dt, price, volume])
             except (ValueError, IndexError) as e:
-                self.logger.error(
-                    "Malformed price history entry %s: %s", entry, e
-                )
+                self.logger.error("Malformed price history entry %s: %s", entry, e)
         return parsed
 
-    def _is_cache_expired(self, timestamp: Optional[datetime], max_age_days: int) -> bool:
+    def _is_cache_expired(
+        self, timestamp: Optional[datetime], max_age_days: int
+    ) -> bool:
         if timestamp is None:
             return True
         return timestamp < datetime.now(timezone.utc) - timedelta(days=max_age_days)
@@ -188,7 +217,7 @@ class SteamMarketParser:
             self.logger.debug("Orders fetching from db")
             self.db.cursor.execute(
                 "SELECT data, sell_orders FROM orders WHERE skin_id = %s",
-                (self.skin_id,)
+                (self.skin_id,),
             )
             result = self.db.cursor.fetchone()
 
@@ -196,8 +225,7 @@ class SteamMarketParser:
                 self._buy_orders, self._sell_orders = result
             else:
                 self.logger.error(
-                    "No cached orders found for skin_id=%s, refetching",
-                    self.skin_id
+                    "No cached orders found for skin_id=%s, refetching", self.skin_id
                 )
                 self._update_orders_cache()
 
@@ -221,27 +249,25 @@ class SteamMarketParser:
                 WHERE skin_id = %s
                 ORDER BY date
                 """,
-                (self.skin_id,)
+                (self.skin_id,),
             )
 
             rows = self.db.cursor.fetchall()
 
             if rows:
                 self._price_history = [
-                    [row[0], float(row[1]), int(row[2])]
-                    for row in rows
+                    [row[0], float(row[1]), int(row[2])] for row in rows
                 ]
             else:
                 self.logger.error(
-                    "No cached price history for skin_id=%s, refetching",
-                    self.skin_id
+                    "No cached price history for skin_id=%s, refetching", self.skin_id
                 )
                 self._update_prices_cache()
 
     def get_data(self) -> Tuple[List[List], List[List], List[List]]:
         """
         Возвращает данные для принятия решения.
-        
+
         Returns:
             (history, buy_orders, sell_orders)
         """
@@ -258,22 +284,20 @@ class SteamMarketParser:
         """Загружает информацию о новом скине"""
         self.load_skin(skin_info)
 
-
-
     def get_inventory(self):
         """
         Возвращает двумерный массив инвентаря:
         [[name, classid, instanceid, asset_id, marketable_time, float_value, int_value], ...]
         """
-        url = 'https://steamcommunity.com/inventory/76561198857946351/730/2'
+        url = "https://steamcommunity.com/inventory/76561198857946351/730/2"
 
         response = self.session.get(url)
         if response.status_code == 200:
             data = response.json()
 
-            assets = data.get('assets', [])
-            descriptions = data.get('descriptions', [])
-            asset_properties = data.get('asset_properties', [])
+            assets = data.get("assets", [])
+            descriptions = data.get("descriptions", [])
+            asset_properties = data.get("asset_properties", [])
 
             # Подготавливаем список asset_id -> свойства
             properties_map = {}
@@ -290,73 +314,84 @@ class SteamMarketParser:
 
             asset_data_list = []
             for asset in assets:
-                asset_data_list.append({
-                    "assetid": asset.get('assetid'),
-                    "classid": asset.get('classid'),
-                    "instanceid": asset.get('instanceid')
-                })
+                asset_data_list.append(
+                    {
+                        "assetid": asset.get("assetid"),
+                        "classid": asset.get("classid"),
+                        "instanceid": asset.get("instanceid"),
+                    }
+                )
 
             result = []
             for item in descriptions:
-                market_hash_name = item.get('market_hash_name')
-                classid = item.get('classid')
-                instanceid = item.get('instanceid')
-                owner_descriptions = item.get('owner_descriptions')
-                marketable_time = owner_descriptions[1].get('value') if owner_descriptions else None
+                market_hash_name = item.get("market_hash_name")
+                classid = item.get("classid")
+                instanceid = item.get("instanceid")
+                owner_descriptions = item.get("owner_descriptions")
+                marketable_time = (
+                    owner_descriptions[1].get("value") if owner_descriptions else None
+                )
 
                 # находим первый asset_id (без массива)
                 asset_id = None
                 for asset_item in asset_data_list:
-                    if classid == asset_item.get('classid') and instanceid == asset_item.get('instanceid'):
-                        asset_id = asset_item.get('assetid')
-                        break   # <--- выходим сразу, чтобы не копился список
+                    if classid == asset_item.get(
+                        "classid"
+                    ) and instanceid == asset_item.get("instanceid"):
+                        asset_id = asset_item.get("assetid")
+                        break  # <--- выходим сразу, чтобы не копился список
 
                 # достаём float/int по asset_id
                 float_value, int_value = (None, None)
                 if asset_id:
                     float_value, int_value = properties_map.get(asset_id, (None, None))
                 if float_value is not None and int_value is not None:
-                    result.append([
-                        market_hash_name,
-                        int(classid),
-                        int(instanceid),
-                        int(asset_id),
-                        marketable_time,
-                        float(float_value),
-                        int(int_value)
-                    ])
+                    result.append(
+                        [
+                            market_hash_name,
+                            int(classid),
+                            int(instanceid),
+                            int(asset_id),
+                            marketable_time,
+                            float(float_value),
+                            int(int_value),
+                        ]
+                    )
                 else:
-                    result.append([
-                        market_hash_name,
-                        int(classid),
-                        int(instanceid),
-                        int(asset_id),
-                        marketable_time,
-                        float_value,
-                        int_value
-                    ])
+                    result.append(
+                        [
+                            market_hash_name,
+                            int(classid),
+                            int(instanceid),
+                            int(asset_id),
+                            marketable_time,
+                            float_value,
+                            int_value,
+                        ]
+                    )
             return result
         else:
-            self.logger.error(f"Ошибка запроса инвентаря: статус {response.status_code}, text: {response.text}")
+            self.logger.error(
+                f"Ошибка запроса инвентаря: статус {response.status_code}, text: {response.text}"
+            )
             return None
-    
 
-    def check_my_state(self) -> tuple[float, float, list[dict]]:
+    def check_my_state(self):
         """
         Возвращает данные своих ордеров на покупку и баланс.
-        
+
         Returns:
             (total_sum, my_wallet, my_buy_orders)
         """
         url = "https://steamcommunity.com/market/"
-         
+
         resp = self.session.get(
             url,
             cookies={"ActListPageSize": "100"},
             timeout=15,
             allow_redirects=True,
         )
-        
+
         soup = BeautifulSoup(resp.text, "html.parser")
 
         total_buyorders = 0.0
@@ -368,8 +403,8 @@ class SteamMarketParser:
 
         for row in my_buy_order_rows:
             # ===== ORDER ID =====
-            full_id = row.get("id")              # "mybuyorder_123456789"
-            order_id = full_id.split("_")[1]    # "123456789"
+            full_id = row.get("id")  # "mybuyorder_123456789"
+            order_id = full_id.split("_")[1]  # "123456789"
 
             # ===== NAME =====
             name_tag = row.select_one(".market_listing_item_name_link")
@@ -385,12 +420,7 @@ class SteamMarketParser:
             price_text = price_tags[0].get_text(strip=True)
             price_text = price_text.split("@")[-1]
 
-            price_clean = (
-                price_text
-                .replace("₸", "")
-                .replace(" ", "")
-                .replace(",", ".")
-            )
+            price_clean = price_text.replace("₸", "").replace(" ", "").replace(",", ".")
 
             price = float(price_clean)
 
@@ -406,22 +436,24 @@ class SteamMarketParser:
             total_buyorders += total
 
             # ===== STORE RESULT =====
-            buy_orders.append({
-                "buy_order_id": order_id,
-                "name": skin_name,
-                "price": price,
-                "qty": qty
-            })
+            buy_orders.append(
+                {
+                    "buy_order_id": order_id,
+                    "name": skin_name,
+                    "price": price,
+                    "qty": qty,
+                }
+            )
 
         sell_orders = []
-
+        self.logger.debug(f"len(sell_orders): {len(sell_orders)}")
         # ===== SELL_ORDERS =====
         my_sell_rows = soup.find_all("div", id=re.compile(r"^mylisting_\d+$"))
 
         for row in my_sell_rows:
             # ===== ORDER ID =====
-            full_id = row.get("id")           # "mylisting_792205646637449623"
-            order_id = full_id.split("_")[1] # "792205646637449623"
+            full_id = row.get("id")  # "mylisting_792205646637449623"
+            order_id = full_id.split("_")[1]  # "792205646637449623"
 
             # ===== NAME =====
             name_tag = row.select_one(".market_listing_item_name_link")
@@ -430,37 +462,38 @@ class SteamMarketParser:
             skin_name = name_tag.get_text(strip=True)
 
             # ===== DATE =====
-            date_tag = row.select_one(".market_listing_right_cell.market_listing_listed_date.can_combine")
+            date_tag = row.select_one(
+                ".market_listing_right_cell.market_listing_listed_date.can_combine"
+            )
             date_text = date_tag.get_text(strip=True) if date_tag else ""
 
             # ===== PRICE =====
-            price_tag = row.select_one(".market_listing_right_cell.market_listing_my_price")
+            price_tag = row.select_one(
+                ".market_listing_right_cell.market_listing_my_price"
+            )
             if not price_tag:
                 continue
 
             price_text = price_tag.get_text(strip=True)
             # Убираем всё в скобках
             price_text = re.sub(r"\(.*?\)", "", price_text)
-            
-            price_clean = (
-                price_text
-                .replace("₸", "")
-                .replace(" ", "")
-                .replace(",", ".")
-            )
+
+            price_clean = price_text.replace("₸", "").replace(" ", "").replace(",", ".")
             price_match = re.search(r"\d+(\.\d+)?", price_clean)
             if not price_match:
                 continue
             price = float(price_match.group())
 
             # ===== STORE RESULT =====
-            sell_orders.append({
-                "sell_order_id": order_id,
-                "name": skin_name,
-                "date": date_text,
-                "price": price,
-            })
-        
+            sell_orders.append(
+                {
+                    "sell_order_id": order_id,
+                    "name": skin_name,
+                    "date": date_text,
+                    "price": price,
+                }
+            )
+
         # ===== WALLET =====
         wallet_tag = soup.select_one(".responsive_menu_user_wallet a")
         if wallet_tag:
@@ -470,15 +503,12 @@ class SteamMarketParser:
                 wallet_clean = match.group(1).replace(" ", "").replace(",", ".")
                 wallet_balance = float(wallet_clean)
 
-
-
         return total_buyorders, wallet_balance, buy_orders, sell_orders
-
 
     def get_my_history(self, start=0, step=100):
         """
         Docstring for get_my_history
-        
+
         Returns: (assetid, market_name, price, acted_on_str, listed_on_str, gain_loss)
         """
         url = f"https://steamcommunity.com/market/myhistory/render/?query=&start={start}&count={step}"
@@ -501,7 +531,10 @@ class SteamMarketParser:
 
             assetid = None
             for asset_key, asset_val in assets.items():
-                if asset_val.get("icon_url") and asset_val["icon_url"].split("/")[-1] in img_elem["src"]:
+                if (
+                    asset_val.get("icon_url")
+                    and asset_val["icon_url"].split("/")[-1] in img_elem["src"]
+                ):
                     assetid = asset_key
                     break
             if not assetid or assetid not in assets:
@@ -510,27 +543,42 @@ class SteamMarketParser:
             asset_data = assets[assetid]
             market_name = asset_data.get("market_hash_name")
 
-            price_elem = row.select_one(".market_listing_their_price .market_listing_price")
+            price_elem = row.select_one(
+                ".market_listing_their_price .market_listing_price"
+            )
             listed_date_elem = row.select(".market_listing_listed_date.can_combine")
-            gain_loss_elem = row.select_one(".market_listing_left_cell.market_listing_gainorloss")
+            gain_loss_elem = row.select_one(
+                ".market_listing_left_cell.market_listing_gainorloss"
+            )
 
             price = None
             if price_elem:
                 raw_price = price_elem.text.strip().split("(")[0]
-                raw_price = raw_price.replace("₸", "").replace(",", ".").replace(" ", "")
+                raw_price = (
+                    raw_price.replace("₸", "").replace(",", ".").replace(" ", "")
+                )
                 try:
                     price = float(raw_price)
                 except ValueError:
                     price = None
 
-            gain_loss = True if gain_loss_elem and gain_loss_elem.text.strip() == '+' else False
+            gain_loss = (
+                True if gain_loss_elem and gain_loss_elem.text.strip() == "+" else False
+            )
 
-            acted_on_str = listed_date_elem[0].text.strip() if len(listed_date_elem) > 0 else None
-            listed_on_str = listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None
+            acted_on_str = (
+                listed_date_elem[0].text.strip() if len(listed_date_elem) > 0 else None
+            )
+            listed_on_str = (
+                listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None
+            )
 
-            history_items.append([assetid, market_name, price, acted_on_str, listed_on_str, gain_loss])
+            history_items.append(
+                [assetid, market_name, price, acted_on_str, listed_on_str, gain_loss]
+            )
 
         return history_items, total_count
+
 
 if __name__ == "__main__":
     logging.getLogger(__name__).info("SteamMarketParser module loaded")
