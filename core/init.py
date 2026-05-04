@@ -13,6 +13,15 @@ from core.steam.cookies import ensure_cookies
 
 log = logging.getLogger("init")
 
+BASE_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/118.0.5993.118 Safari/537.36",
+    "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+}
+
 
 def init_environment():
     """
@@ -29,11 +38,7 @@ def init_environment():
     # создаём session
     session = requests.Session()
     session.cookies.update(cookies)
-    session.headers.update(
-        {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:146.0) Gecko/20100101 Firefox/146.0"
-        }
-    )
+    session.headers.update(BASE_HEADERS)
     log.debug("request session created")
 
     # подключаемся к БД

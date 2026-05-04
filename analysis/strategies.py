@@ -1,77 +1,57 @@
 # analysis/strategies.py
 
 import logging
-from typing import Optional, Tuple
+from typing import List
 
-from analysis.cleaners import aggregate_daily, remove_price_outliers_iqr
-from analysis.features import HistoryAnalyzer, bef_cleaning_summary
-from analysis.filters import OrderBookAnalyzer, PumpDetector
-from analysis.plot import plot_analysis
+import core.objects as obj
+import analysis.cleaners as cleaners
+import analysis.features as features
+import analysis.filters as filters
+import analysis.plot as plot
 
 log = logging.getLogger("strategy")
 
 
 class BaseStrategy:
-    def decide(self, **kwargs):
+    def process(self, market_data: obj.ItemMarketData):
+        raise NotImplementedError
+
+    def decide(
+        self,
+        processed: obj.ItemProcessed,
+        market_data: obj.ItemMarketData,
+        clean_history: List[obj.ItemPriceHistory],
+    ):
         raise NotImplementedError
 
 
 class EVA(BaseStrategy):
 
-    def __init__(self, db):
-        self.order_book_analyzer = OrderBookAnalyzer()
-        self.pump_detector = PumpDetector()
+    def __init__(self):
+        config = obj.load_config()
+        cfg = config.analysis
+        self.order_book_analyzer = filters.OrderBookAnalyzer(cfg=cfg)
+        self.pump_detector = filters.PumpDetector(cfg=cfg)
         self.plot = False
-        self.db = db
+        self.cfg = cfg
 
-    def decide(self, **kwargs) -> Tuple[Optional[float], Optional[int]]:
-        """
-        EVA strategy: принимает историю и ордера, сам всё обрабатывает.
-
-        Args:
-            history: List[(datetime, price, volume)] — сырая история цен
-            buy_orders: List[(price, volume)] — buy orders
-            sell_orders: List[(price, volume)] — sell orders
-
-        Returns:
-            (price, amount) или (None, None)
-        """
-        raw_history = kwargs.get("history")
-        buy_orders = kwargs.get("buy_orders")
-        sell_orders = kwargs.get("sell_orders")
-        skin_info = kwargs.get("skin")
+    def decide(
+        self,
+        processed: obj.ItemProcessed,
+        market_data: obj.ItemMarketData,
+        clean_history: List[obj.ItemPriceHistory],
+    ):
+        raw_history = market_data.history
+        buy_orders = market_data.buy_orders
+        sell_orders = market_data.sell_orders
 
         if not raw_history:
             log.error("No raw_history provided")
             return None, None
 
-        log.debug("start processing")
-        processing_data, history, analysis_id = self.processing(
-            history=raw_history,
-            buy_orders=buy_orders,
-            sell_orders=sell_orders,
-            skin=skin_info,
-        )
-        (
-            slope_6m,
-            slope_1m,
-            avg_month,
-            avg_week,
-            volume,
-            high,
-            low,
-            moment,
-            avg_5_sell_orders,
-            avg_5_buy_orders,
-            spread,
-            mid_price,
-            spread_percent,
-            bid_depth,
-        ) = processing_data
-
         # === ФИЛЬТР 1: Проверка на памп/дамп ===
         pump_indicator = self.pump_detector.check(
-            history=history,
+            history=clean_history,
         )
 
         if pump_indicator:
@@ -91,38 +71,40 @@ class EVA(BaseStrategy):
         )
 
         # === АНАЛИЗ СТАКАНОВ ===
-        y, amount = self.order_book_analyzer.analyze(
-            buy_orders=buy_orders,
-            sell_orders=sell_orders,
-            avg_week_price=avg_week,
-            slope_1m=slope_1m,
-            volume_week=volume,
+        price, amount = self.order_book_analyzer.analyze(
+            buy_orders=buy_orders, sell_orders=sell_orders, processed=processed
         )
 
-        if y is not None:
-            log.info(f"✓ BUY DECISION: {y:.2f}₸ x{amount}")
-            discount = (1 - y / self.avg_week_price) * 100
-            log.debug(f"Discount from avg_week: {discount:.1f}%")
-            log.debug(f"Price vs moment: {((y / self.moment_price - 1) * 100):+.1f}%")
+        if price is not None:
+            log.info(f"✓ BUY DECISION: {price:.2f}₸ x{amount}")
+            if processed.avg_week is not None:
+                discount = (1 - price / processed.avg_week) * 100
+                log.debug(f"Discount from avg_week: {discount:.1f}%")
+            if processed.moment is not None:
+                log.debug(
+                    f"Price vs moment: {((price / processed.moment - 1) * 100):+.1f}%"
+                )
         else:
             log.info("✗ SKIP: no suitable price found")
 
-        return y, amount, analysis_id
+        return price, amount
 
-    def processing(self, **kwargs):
-        raw_history = kwargs.get("history")
-        buy_orders = kwargs.get("buy_orders")
-        sell_orders = kwargs.get("sell_orders")
-        skin_info = kwargs.get("skin")
-        log.info(f"skin: {skin_info}")
+    def process(self, market_data: obj.ItemMarketData):
+        raw_history = market_data.history
+        buy_orders = market_data.buy_orders
+        sell_orders = market_data.sell_orders
 
-        high, low, volume, moment = bef_cleaning_summary(raw_history)
+        high, low, volume, moment = features.bef_cleaning_summary(
+            raw_history, self.cfg.approx_multiplier
+        )
 
-        raw_history = aggregate_daily(raw_history)
+        raw_history = cleaners.aggregate_daily(raw_history)
 
-        history = remove_price_outliers_iqr(raw_history, 0.2)
+        clean_history = cleaners.remove_price_outliers_iqr(
+            raw_history, self.cfg.factor, self.cfg.q_arr
+        )
 
-        analyzer = HistoryAnalyzer(history)
+        analyzer = features.HistoryAnalyzer(clean_history)
 
         slope_6m, _, _, _ = analyzer.linreg(analyzer.six_month_ago)
         slope_1m, _, _, _ = analyzer.linreg(analyzer.one_month_ago)
@@ -131,12 +113,12 @@ class EVA(BaseStrategy):
         avg_week = analyzer.calc_avg(analyzer.one_week_ago)
 
         if self.plot:
-            plot_analysis(raw_history, history, slope_6m, slope_1m)
+            plot.plot_analysis(raw_history, clean_history, slope_6m, slope_1m)
 
-        avg_5_sell_orders = sum(o[0] for o in sell_orders[:5]) / 5
-        avg_5_buy_orders = sum(o[0] for o in buy_orders[:5]) / 5
+        avg_5_sell_orders = sum(o.price for o in sell_orders[:5]) / 5
+        avg_5_buy_orders = sum(o.price for o in buy_orders[:5]) / 5
         if buy_orders:
-            bid_depth = buy_orders[min(4, len(buy_orders) - 1)][1]
+            bid_depth = buy_orders[min(4, len(buy_orders) - 1)].qty
             bid_depth = int(bid_depth)
         else:
             bid_depth = None  # или любое значение по умолчанию
@@ -146,110 +128,46 @@ class EVA(BaseStrategy):
 
         spread_percent = spread / mid_price  # например 0.05 = 5%
 
-        def f(value):
-            if value is not None:
-                return round(value, 2)
-            else:
-                return None
-
-        data = (
-            f(slope_6m),
-            f(slope_1m),
-            f(avg_month),
-            f(avg_week),
-            volume,
-            f(high),
-            f(low),
-            f(moment),
-            f(avg_5_sell_orders),
-            f(avg_5_buy_orders),
-            f(spread),
-            f(mid_price),
-            f(spread_percent),
-            bid_depth,
+        processed = obj.ItemProcessed(
+            slope_6m=slope_6m,
+            slope_1m=slope_1m,
+            avg_month=avg_month,
+            avg_week=avg_week,
+            volume=volume,
+            high=high,
+            low=low,
+            moment=moment,
+            avg_5_sell_orders=avg_5_sell_orders,
+            avg_5_buy_orders=avg_5_buy_orders,
+            spread=spread,
+            mid_price=mid_price,
+            spread_percent=spread_percent,
+            bid_depth=bid_depth,
         )
-        log.debug(f"processing_data: {data}")
-        analysis_id = self.db.update_skins_analysis(skin_info[0], data)
-        self.db.commit()
-        return data, history, analysis_id
+        log.debug(f"processing_data: {processed}")
+        # analysis_id = self.db.update_skins_analysis(skin.id, data)
+        # self.db.commit()
+
+        return processed, clean_history
 
 
 class PTModel:
     """Обёртка для разных стратегий торговли"""
 
-    def __init__(self, model_type: str, db):
+    def __init__(self, model_type: str):
 
         strategies = {"EVA": EVA}
 
         if model_type not in strategies:
             raise ValueError(f"Unknown model type: {model_type}")
 
-        self.strategy = strategies[model_type](db)
+        self.strategy = strategies[model_type]()
 
-    def decide(self, **kwargs):
-        """
-        Вычисляет фичи для предмета и принимает решение о покупке.
+    def decide(self, market_data: obj.ItemMarketData):
+        processed, clean_history = self.strategy.process(market_data)
+        return self.strategy.decide(
+            processed=processed, market_data=market_data, clean_history=clean_history
+        )
 
-        Args:
-            history: List[(datetime, price, volume)] — сырая история
-            buy_orders: List[(price, volume)] — buy orders
-            sell_orders: List[(price, volume)] — sell orders
-
-        Returns:
-            (price, amount) или (None, None)
-        """
-        return self.strategy.decide(**kwargs)
-
-    def processing(self, **kwargs):
-        """
-        Вычисляет фичи для предмета
-
-        Args:
-            history: List[(datetime, price, volume)] — сырая история
-            buy_orders: List[(price, volume)] — buy orders
-            sell_orders: List[(price, volume)] — sell orders
-
-        Returns: ((slope_6m, slope_1m, avg_month, avg_week, volume, high, low, moment, avg_5_sell_orders, avg_5_buy_orders, spread, mid_price, spread_percent, bid_depth), filtred_history)
-        """
-        return self.strategy.processing(**kwargs)
-
-
-def test_eva():
-    """Тестовая функция"""
-    from core.Parsers import SteamMarketParser
-    from core.init import init_environment
-    from core.logging_config import setup_logging
-
-    MODULE_NAME = "Strategy"
-
-    setup_logging(
-        module_name=MODULE_NAME, log_file=f"logs/{MODULE_NAME}.log", level=logging.DEBUG
-    )
-
-    session, cookies, db = init_environment()
-
-    SKIN_FOR_TEST_DUMP = "M4A1-S | Flashback (Field-Tested)"
-    SKIN_FOR_TEST = "USP-S | Blueprint (Well-Worn)"
-
-    skin_info = db.get_test_skin(SKIN_FOR_TEST)
-
-    parser = SteamMarketParser(session, cookies, db)
-    parser.load_skin(skin_info)
-    log.debug(f"skin_info:{skin_info}")
-
-    history, buy_orders, sell_orders = parser.get_buy_data()
-
-    pt_model = PTModel(model_type="EVA", db=db)
-
-    y, amount = pt_model.decide(
-        history=history, buy_orders=buy_orders, sell_orders=sell_orders, skin=skin_info
-    )
-
-    if y is not None:
-        log.info(f"price={y:.2f}₸, amount={amount}")
-    else:
-        log.info("no buy decision made")
-
-
-if __name__ == "__main__":
-    test_eva()
+    def process(self, market_data: obj.ItemMarketData):
+        return self.strategy.process(market_data=market_data)

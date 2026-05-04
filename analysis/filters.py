@@ -1,47 +1,41 @@
 import logging
-from typing import Optional, Tuple, List, Dict
+from typing import Optional, List, Dict
 from datetime import datetime, timedelta, timezone
+import core.objects as obj
 
 
 class OrderBookAnalyzer:
     """Анализатор стаканов ордеров — поиск стенок ликвидности"""
 
-    def __init__(self):
+    def __init__(self, cfg: obj.AnalysisConfig):
         self.log = logging.getLogger(__name__)
+
+        self.down_trende_muliplier = cfg.down_trende_muliplier
+        self.up_trende_multiplier = cfg.up_trende_multiplier
+        self.volume_limit_multiplier = cfg.volume_limit_multiplier
+        self.price_zone_percentage = cfg.price_zone_percentage
+        self.min_walls = cfg.min_walls
+        self.max_walls = cfg.max_walls
 
     def analyze(
         self,
-        buy_orders: List[Tuple[float, int]],
-        sell_orders: List[Tuple[float, int]],
-        avg_week_price: float,
-        slope_1m: float,
-        volume_week: int,
-    ) -> Tuple[Optional[float], Optional[int]]:
-        """
-        Главный метод — возвращает цену и количество для покупки.
+        buy_orders: List[obj.ItemOrder],
+        sell_orders: List[obj.ItemOrder],
+        processed: obj.ItemProcessed,
+    ):
 
-        Args:
-            buy_orders: список ордеров на покупку [(price, volume)]
-            sell_orders: список ордеров на продажу [(price, volume)]
-            avg_week_price: средняя цена за неделю
-            slope_1m: тренд за месяц
-            volume_week: объём продаж за неделю
-
-        Returns:
-            (price, amount) или (None, None)
-        """
         self.buy_orders = buy_orders
         self.sell_orders = sell_orders
-        self.avg_week_price = avg_week_price
-        self.slope_1m = slope_1m
-        self.volume_week = volume_week
+        self.avg_week_price = processed.avg_week
+        self.slope_1m = processed.slope_1m
+        self.volume_week = processed.volume
 
         # Определяем количество для покупки на основе тренда
-        amount = 2 if slope_1m < 0 else 1
+        amount = 2 if processed.slope_1m < 0 else 1
 
         self.log.debug("=== ORDER BOOK ANALYSIS ===")
         self.log.debug(
-            f"Purchase amount: {amount} (based on {'uptrend' if slope_1m < 0 else 'downtrend'})"
+            f"Purchase amount: {amount} (based on {'uptrend' if processed.slope_1m < 0 else 'downtrend'})"
         )
 
         # Вычисляем динамический порог
@@ -51,7 +45,7 @@ class OrderBookAnalyzer:
             return None, None
 
         # Фильтруем ордера в пределах порога
-        orders_in_range = [o for o in buy_orders if o[0] <= threshold_top]
+        orders_in_range = [item for item in buy_orders if item.price <= threshold_top]
 
         self.log.debug(
             f"Orders within threshold: {len(orders_in_range)} / {len(buy_orders)}"
@@ -85,12 +79,12 @@ class OrderBookAnalyzer:
 
         # Средняя по топ-5 sell orders
         top_sell_orders = self.sell_orders[:5]
-        avg_sell_price = sum(order[0] for order in top_sell_orders) / len(
+        avg_sell_price = sum(order.price for order in top_sell_orders) / len(
             top_sell_orders
         )
 
         self.log.debug(
-            f"Top {len(top_sell_orders)} sell orders: {[f'{o[0]:.2f}₸' for o in top_sell_orders]}"
+            f"Top {len(top_sell_orders)} sell orders: {[f'{o.price:.2f}₸' for o in top_sell_orders]}"
         )
         self.log.debug(f"Average sell price: {avg_sell_price:.2f}₸")
 
@@ -114,10 +108,10 @@ class OrderBookAnalyzer:
 
         # Определяем множитель в зависимости от тренда
         if self.slope_1m < 0:
-            multiplier = 0.86
+            multiplier = self.down_trende_multiplier
             trend = "DOWNTREND"
         else:
-            multiplier = 0.85
+            multiplier = self.up_trende_multiplier
             trend = "UPTREND"
 
         default_threshold_top = threshold_price * multiplier
@@ -131,7 +125,9 @@ class OrderBookAnalyzer:
         # Ищем первый ордер ниже порога
         try:
             matching_order = next(
-                order for order in self.buy_orders if order[0] < default_threshold_top
+                order
+                for order in self.buy_orders
+                if order.price < default_threshold_top
             )
         except StopIteration:
             self.log.error(
@@ -139,16 +135,16 @@ class OrderBookAnalyzer:
             )
 
             closest_order = min(
-                self.buy_orders, key=lambda x: abs(x[0] - default_threshold_top)
+                self.buy_orders, key=lambda x: abs(x.price - default_threshold_top)
             )
             self.log.debug(
-                f"Closest order: {closest_order[0]:.2f}₸ (diff: {closest_order[0] - default_threshold_top:+.2f}₸)"
+                f"Closest order: {closest_order.price:.2f}₸ (diff: {closest_order.price - default_threshold_top:+.2f}₸)"
             )
             return None
 
-        threshold_top = matching_order[0]
-        order_volume = matching_order[1]
-        volume_limit = self.volume_week * 1.7
+        threshold_top = matching_order.price
+        order_volume = matching_order.qty
+        volume_limit = self.volume_week * self.volume_limit_multiplier
 
         self.log.debug(
             f"Found matching order: price={threshold_top:.2f}₸, volume={order_volume}"
@@ -174,24 +170,27 @@ class OrderBookAnalyzer:
             self.log.debug(f"Volume excess: +{excess_pct:.1f}%")
             return None
 
-    def _filter_price_zone(self, orders_in_range: List, threshold_top: float) -> List:
+    def _filter_price_zone(
+        self, orders_in_range: List[obj.ItemOrder], threshold_top: float
+    ) -> List:
         """Ограничивает зону поиска в пределах разумного диапазона цен"""
 
-        min_price = orders_in_range[-1][0]
+        min_price = orders_in_range[-1].price
         price_range = threshold_top - min_price
 
         # Настраиваемый параметр для зоны поиска
-        PRICE_ZONE_PERCENTAGE = 0.4
-        min_realistic_price = threshold_top - (price_range * PRICE_ZONE_PERCENTAGE)
+        min_realistic_price = threshold_top - (price_range * self.price_zone_percentage)
 
-        realistic_orders = [o for o in orders_in_range if o[0] >= min_realistic_price]
+        realistic_orders = [
+            o for o in orders_in_range if o.price >= min_realistic_price
+        ]
 
         self.log.debug("=== PRICE ZONE FILTERING ===")
         self.log.debug(
             f"Full price range: {threshold_top:.2f}₸ → {min_price:.2f}₸ (span: {price_range:.2f}₸)"
         )
         self.log.debug(
-            f"Initial zone: top {PRICE_ZONE_PERCENTAGE*100:.0f}% → min_price: {min_realistic_price:.2f}₸"
+            f"Initial zone: top {self.price_zone_percentage*100:.0f}% → min_price: {min_realistic_price:.2f}₸"
         )
         self.log.debug(f"Orders in initial zone: {len(realistic_orders)}")
 
@@ -200,7 +199,7 @@ class OrderBookAnalyzer:
             PRICE_ZONE_PERCENTAGE = 0.6
             min_realistic_price = threshold_top - (price_range * PRICE_ZONE_PERCENTAGE)
             realistic_orders = [
-                o for o in orders_in_range if o[0] >= min_realistic_price
+                o for o in orders_in_range if o.price >= min_realistic_price
             ]
 
             self.log.debug(
@@ -210,15 +209,17 @@ class OrderBookAnalyzer:
 
         if realistic_orders:
             self.log.debug(
-                f"Realistic price span: {realistic_orders[0][0]:.2f}₸ → {realistic_orders[-1][0]:.2f}₸"
+                f"Realistic price span: {realistic_orders[0].price:.2f}₸ → {realistic_orders[-1].price:.2f}₸"
             )
             self.log.debug(
-                f"Volume in zone: {realistic_orders[0][1]} → {realistic_orders[-1][1]}"
+                f"Volume in zone: {realistic_orders[0].qty} → {realistic_orders[-1].qty}"
             )
 
         return realistic_orders
 
-    def _find_liquidity_walls(self, realistic_orders: List) -> List[Dict]:
+    def _find_liquidity_walls(
+        self, realistic_orders: List[obj.ItemOrder]
+    ) -> List[Dict]:
         """Собирает данные о стенах ликвидности"""
 
         liquidity_walls = []
@@ -227,9 +228,9 @@ class OrderBookAnalyzer:
             current_order = realistic_orders[i]
             next_order = realistic_orders[i + 1]
 
-            current_price = current_order[0]
-            current_volume = current_order[1]
-            next_volume = next_order[1]
+            current_price = current_order.price
+            current_volume = current_order.qty
+            next_volume = next_order.qty
 
             volume_jump = next_volume - current_volume
             volume_growth_pct = (
@@ -271,17 +272,17 @@ class OrderBookAnalyzer:
         )
 
         # Отбираем значимые стенки
-        MIN_WALLS = 3
-        MAX_WALLS = 8
+        min_walls = self.min_walls
+        max_walls = self.max_walls
 
         significant_walls = [
             w for w in liquidity_walls if w["volume_jump"] > significance_threshold
         ]
 
-        if len(significant_walls) < MIN_WALLS:
+        if len(significant_walls) < min_walls:
             candidate_walls = (
-                liquidity_walls[:MIN_WALLS]
-                if len(liquidity_walls) >= MIN_WALLS
+                liquidity_walls[:min_walls]
+                if len(liquidity_walls) >= min_walls
                 else liquidity_walls
             )
 
@@ -289,7 +290,7 @@ class OrderBookAnalyzer:
                 f"Only {len(significant_walls)} significant walls, using top {len(candidate_walls)}"
             )
         else:
-            candidate_walls = significant_walls[:MAX_WALLS]
+            candidate_walls = significant_walls[:max_walls]
 
             self.log.debug(
                 f"Found {len(significant_walls)} significant walls, using top {len(candidate_walls)}"
@@ -341,39 +342,27 @@ class OrderBookAnalyzer:
 
 
 class PumpDetector:
-    """Детектор манипуляций с ценой (памп/дамп)"""
 
-    def __init__(self):
-        # Пороги (калибруй под свои данные)
-        self.BOOST_THRESHOLD = 10  # рост цены >10% (памп)
-        self.VOLATILITY_THRESHOLD = 18  # средняя волатильность >18%
+    def __init__(self, cfg: obj.AnalysisConfig):
+        self.BOOST_THRESHOLD = cfg.boost_threshold  # рост цены >10% (памп)
+        self.VOLATILITY_THRESHOLD = cfg.volatility_threshold
         self.log = logging.getLogger(__name__)
 
-    def check(
-        self, history: List[Tuple[datetime, float, int]]
-    ) -> Tuple[bool, List[str], float]:
-        """
-        Главный метод детекции манипуляций.
-
-        Args:
-            history: история продаж [(datetime, price, volume)]
-
-        Returns:
-            is_manipulated: bool
-        """
+    def check(self, history: List[obj.ItemPriceHistory]):
 
         self.log.debug("=== PUMP DETECTION ===")
 
         if len(history) < 20:
-
             self.log.debug("Недостаточно данных для анализа (<20 записей)")
             return True
 
         # Извлекаем только цены
-        prices = [p for _, p, _ in history if p is not None]
+        prices = [item.price for item in history if item.price is not None]
         year_ago = datetime.now(tz=timezone.utc) - timedelta(365)
         year_prices = [
-            p for date, p, _ in history if p is not None and date >= year_ago
+            item.price
+            for item in history
+            if item.price is not None and item.date >= year_ago
         ]
         if len(prices) < 20:
             return True

@@ -2,6 +2,8 @@ import psycopg2
 from psycopg2.extras import Json, DictCursor
 from datetime import datetime, timezone, timedelta
 import yaml
+import os
+import core.objects as obj
 
 
 def normalize_date(raw_date):
@@ -33,13 +35,14 @@ class PostgreSQLDB:
         port=5432,
         dbname="steam",
         user="postgres",
-        password="DEFAULT_PASSWORD",
+        password=os.getenv("DEFAULT_PASSWORD"),
     ):
         self.conn = psycopg2.connect(
             host=host, port=port, dbname=dbname, user=user, password=password
         )
         self.conn.set_client_encoding("UTF8")
         self.cursor = self.conn.cursor()
+        self.dict_cur = self.conn.cursor(cursor_factory=DictCursor)
 
     def insert_or_update_orders(self, skin_id, skin_orders, sell_orders=None):
         if sell_orders is not None:
@@ -269,7 +272,7 @@ class PostgreSQLDB:
         return user_items + common_items
 
     def get_skins(self, inventory):
-        skin_names = tuple(skin[0] for skin in inventory)
+        skin_names = tuple(skin.name for skin in inventory)
 
         with self.conn.cursor(cursor_factory=DictCursor) as cursor:
             cursor.execute(
@@ -416,11 +419,18 @@ class PostgreSQLDB:
     def get_test_skin(self, skin):
         self.cursor.execute(
             """
-                                SELECT id, name, orders_timestamp, history_timestamp, item_name_id FROM skins WHERE name = %s
-                                """,
+            SELECT id, name, item_name_id, orders_timestamp, history_timestamp FROM skins WHERE name = %s        
+            """,
             (skin,),
         )
-        return self.cursor.fetchone()
+        row = self.cursor.fetchone()
+        return obj.Skin(
+            id=row[0],
+            name=row[1],
+            item_name_id=row[2],
+            orders_timestamp=row[3],
+            history_timestamp=row[4],
+        )
 
     def buy_placed(self, skin_name, price, amount, analysis_id):
         self.cursor.execute(

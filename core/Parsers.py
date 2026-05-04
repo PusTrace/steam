@@ -2,7 +2,7 @@
 import requests, logging
 import time
 import random
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Tuple, Dict, Any
 import urllib3
 import re
@@ -10,148 +10,84 @@ import json
 from urllib.parse import quote
 from bs4 import BeautifulSoup
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+from core.db import PostgreSQLDB
 from core.utils import normalize_date
+from core import objects as obj
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class SteamMarketParser:
     """Парсер данных Steam Market с кешированием в PostgreSQL"""
 
-    STEAM_APPID = 730
-    ORDERS_CACHE_DAYS = 1
-    PRICES_CACHE_DAYS = 3
-    MAX_RETRIES = 5
-    RETRY_DELAY_RANGE = (60 * 60, 60 * 60 * 2)
-
-    BASE_HEADERS = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/118.0.5993.118 Safari/537.36",
-        "Accept": "application/json",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-    }
-
-    def __init__(
-        self, session: requests.Session, cookies: dict, db, loud_mode: bool = False
-    ):
+    def __init__(self, session: requests.Session, db: PostgreSQLDB, config: obj.Config):
         self.session = session
-        self.session.cookies.update(cookies)
         self.db = db
+        self.cfg = config.parser
 
         self.logger = logging.getLogger(__name__)
 
-        self.skin_id: Optional[int] = None
-        self.name: Optional[str] = None
-        self.item_name_id: Optional[int] = None
-        self.buy_price: Optional[float] = None
-        self.orders_timestamp: Optional[datetime] = None
-        self.history_timestamp: Optional[datetime] = None
+        self.market_data = obj.ItemMarketData
 
-        self._buy_orders: List[List] = []
-        self._sell_orders: List[List] = []
-        self._price_history: List[List] = []
-
-    def load_skin(self, skin_info: Tuple) -> None:
-        len_skin_info = len(skin_info)
-        if len_skin_info == 7:
-            (
-                self.skin_id,
-                self.name,
-                self.history_timestamp,
-                self.appearance_date,
-                self.item_name_id,
-                self.orders_timestamp,
-                self.history_timestamp,
-            ) = skin_info
-        elif len_skin_info == 8:
-            (
-                self.skin_id,
-                self.name,
-                self.history_timestamp,
-                self.appearance_date,
-                self.item_name_id,
-                self.orders_timestamp,
-                self.history_timestamp,
-        self.buy_price,
-            ) = skin_info
-        elif len_skin_info == 5:
-            (
-                self.skin_id,
-                self.name,
-                self.orders_timestamp,
-                self.history_timestamp,
-                self.item_name_id
-            ) = skin_info
-        else:
-            self.logger.error(
-                f"len of skin_info unexpected {len_skin_info}, expected 7 or 8"
-            )
-
-        self.logger.debug(f"skin_info: {skin_info}")
+    def load_skin(self, skin: obj.Skin) -> None:
+        self.skin = skin
+        self.logger.debug(f"loaded skin: {skin.name}")
 
     def _retry_request(self, func, *args, **kwargs) -> Any:
-        for attempt in range(self.MAX_RETRIES):
+        for attempt in range(self.cfg.max_retries):
             try:
                 return func(*args, **kwargs)
             except requests.RequestException as e:
-                if attempt == self.MAX_RETRIES - 1:
-                    self.logger.error(f"Failed after {self.MAX_RETRIES} attempts: {e}")
+                if attempt == self.cfg.max_retries - 1:
+                    self.logger.error(
+                        f"Failed after {self.cfg.max_retries} attempts: {e}"
+                    )
 
-                delay = random.uniform(*self.RETRY_DELAY_RANGE)
+                delay = random.uniform(*self.cfg.retry_delay_range)
                 self.logger.warning(
                     "Request failed (attempt %s/%s): %s. Retry in %.2fs",
                     attempt + 1,
-                    self.MAX_RETRIES,
+                    self.cfg.max_retries,
                     e,
                     delay,
                 )
                 time.sleep(delay)
 
     def _fetch_orders(self) -> Dict:
-        if not self.item_name_id:
+        if not self.skin.item_name_id:
             raise ValueError("item_name_id is required")
 
         url = "https://steamcommunity.com/market/itemordershistogram"
         params = {
-            "country": "KZ",
+            "country": self.cfg.country,
             "language": "english",
-            "currency": 37,
-            "item_nameid": self.item_name_id,
+            "currency": self.cfg.currency,
+            "item_nameid": self.skin.item_name_id,
             "norender": 1,
         }
 
         def make_request():
-            response = self.session.get(
-                url, params=params, headers=self.BASE_HEADERS, timeout=30
-            )
+            response = self.session.get(url, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
 
             if not data.get("success"):
                 self.logger.error(
-                    f"API returned success=false for item_nameid={self.item_name_id}"
+                    f"API returned success=false for item_nameid={self.skin.item_name_id}"
                 )
             return data
 
         return self._retry_request(make_request)
 
-    def _fetch_price_history(self) -> List[List]:
-        if not self.name:
+    def _fetch_price_history(self) -> List[obj.ItemPriceHistory]:
+        if not self.skin.name:
             raise ValueError("skin name is required")
 
-        encoded_name = quote(self.name, safe="")
-        url = f"https://steamcommunity.com/market/listings/{self.STEAM_APPID}/{encoded_name}?currency=37"
-
-        headers = {
-            **self.BASE_HEADERS,
-            "Referer": "https://steamcommunity.com/market/",
-            "Accept": "text/html",
-        }
+        encoded_name = quote(self.skin.name, safe="")
+        url = f"https://steamcommunity.com/market/listings/{self.cfg.steam_appid}/{encoded_name}?currency=37"
 
         def make_request():
-            response = self.session.get(url, headers=headers, timeout=30)
+            response = self.session.get(url, timeout=30)
             response.raise_for_status()
             html = response.text
 
@@ -163,7 +99,9 @@ class SteamMarketParser:
 
             match = re.search(r"var\s+line1\s*=\s*(\[[\s\S]*?\]);", html)
             if not match:
-                self.logger.error(f"Price history (line1) not found for {self.name}")
+                self.logger.error(
+                    f"Price history (line1) not found for {self.skin.name}"
+                )
 
             try:
                 raw_prices = json.loads(match.group(1))
@@ -174,7 +112,7 @@ class SteamMarketParser:
 
         return self._retry_request(make_request)
 
-    def _parse_price_history(self, raw_prices: List) -> List[List]:
+    def _parse_price_history(self, raw_prices: List) -> List[obj.ItemPriceHistory]:
         parsed = []
         for entry in raw_prices:
             try:
@@ -187,7 +125,7 @@ class SteamMarketParser:
                 price = float(raw_price)
                 volume = int(str(raw_volume).replace(",", "").replace(" ", ""))
 
-                parsed.append([dt, price, volume])
+                parsed.append(obj.ItemPriceHistory(date=dt, price=price, volume=volume))
             except (ValueError, IndexError) as e:
                 self.logger.error("Malformed price history entry %s: %s", entry, e)
         return parsed
@@ -201,44 +139,56 @@ class SteamMarketParser:
 
     def _update_orders_cache(self) -> None:
         """Обновляет ордера (buy/sell) из Steam API или БД"""
-        if self._is_cache_expired(self.orders_timestamp, self.ORDERS_CACHE_DAYS):
+        if self._is_cache_expired(
+            self.skin.orders_timestamp, self.cfg.orders_cache_days
+        ):
             self.logger.debug("Orders fetching from Steam API")
             data = self._fetch_orders()
 
-            self._buy_orders = data.get("buy_order_graph", [])
-            self._sell_orders = data.get("sell_order_graph", [])
+            _buy_orders = obj.parse_orders(data.get("buy_order_graph", []))
+            _sell_orders = obj.parse_orders(data.get("sell_order_graph", []))
 
-            self.db.insert_or_update_orders(
-                self.skin_id, self._buy_orders, self._sell_orders
-            )
-            self.db.update_skin_orders_timestamp(self.skin_id)
-            self.db.commit()
+            self.market_data.buy_orders = _buy_orders
+            self.market_data.sell_orders = _sell_orders
+
+            # self.db.insert_or_update_orders(                      TODO: remake db fro list[list] to list[obj]
+            #    self.skin.id, self._buy_orders, self._sell_orders
+            # )
+            # self.db.update_skin_orders_timestamp(self.skin.id)
+            # self.db.commit()
         else:
             self.logger.debug("Orders fetching from db")
             self.db.cursor.execute(
                 "SELECT data, sell_orders FROM orders WHERE skin_id = %s",
-                (self.skin_id,),
+                (self.skin.id,),
             )
             result = self.db.cursor.fetchone()
 
             if result:
-                self._buy_orders, self._sell_orders = result
+                _buy_orders, _sell_orders = result
+                _buy_orders = obj.parse_orders(_buy_orders)
+                _sell_orders = obj.parse_orders(_sell_orders)
+                self.market_data.buy_orders = _buy_orders
+                self.market_data.sell_orders = _sell_orders
             else:
                 self.logger.error(
-                    "No cached orders found for skin_id=%s, refetching", self.skin_id
+                    "No cached orders found for skin_id=%s, refetching",
+                    self.skin.id,
                 )
                 self._update_orders_cache()
 
     def _update_prices_cache(self) -> None:
-        """Обновляет историю цен из Steam API или БД — БЕЗ preprocessing"""
-        if self._is_cache_expired(self.history_timestamp, self.PRICES_CACHE_DAYS):
+        if self._is_cache_expired(
+            self.skin.history_timestamp, self.cfg.prices_cache_days
+        ):
             self.logger.debug("Prices fetching from Steam API")
-            self._price_history = self._fetch_price_history()
+            _price_history = self._fetch_price_history()
+            self.market_data.history = _price_history
 
             # Сохраняем ТОЛЬКО сырую историю
-            self.db.update_price_history(self.skin_id, self._price_history)
-            self.db.update_skin_history_timestamp(self.skin_id)
-            self.db.commit()
+            # self.db.update_price_history(self.skin.id, self._price_history)
+            # self.db.update_skin_history_timestamp(self.skin.id)
+            # self.db.commit()
         else:
             self.logger.debug("Prices fetching from db")
 
@@ -249,45 +199,40 @@ class SteamMarketParser:
                 WHERE skin_id = %s
                 ORDER BY date
                 """,
-                (self.skin_id,),
+                (self.skin.id,),
             )
 
             rows = self.db.cursor.fetchall()
 
             if rows:
-                self._price_history = [
-                    [row[0], float(row[1]), int(row[2])] for row in rows
+                _price_history = [
+                    obj.ItemPriceHistory(date=row[0], price=row[1], volume=row[2])
+                    for row in rows
                 ]
+                self.market_data.history = _price_history
             else:
                 self.logger.error(
-                    "No cached price history for skin_id=%s, refetching", self.skin_id
+                    "No cached price history for skin_id=%s, refetching", self.skin.id
                 )
                 self._update_prices_cache()
 
-    def get_data(self) -> Tuple[List[List], List[List], List[List]]:
-        """
-        Возвращает данные для принятия решения.
-
-        Returns:
-            (history, buy_orders, sell_orders)
-        """
+    def get_data(
+        self,
+    ):
         self._update_orders_cache()
         self._update_prices_cache()
-        return self._price_history, self._buy_orders, self._sell_orders
+        tmp_market_data = self.market_data
+        return tmp_market_data
 
     def update_data(self):
         """Принудительно обновляет ордера и историю цен"""
         self._update_orders_cache()
         self._update_prices_cache()
 
-    def update_skin_info(self, skin_info):
-        """Загружает информацию о новом скине"""
-        self.load_skin(skin_info)
-
     def get_inventory(self):
         """
-        Возвращает двумерный массив инвентаря:
-        [[name, classid, instanceid, asset_id, marketable_time, float_value, int_value], ...]
+        Возвращает массив инвентаря:
+        [obj.(UserInventory(name, classid, instanceid, asset_id, marketable_time, float_value, int_value), ...]
         """
         url = "https://steamcommunity.com/inventory/76561198857946351/730/2"
 
@@ -345,30 +290,20 @@ class SteamMarketParser:
                 float_value, int_value = (None, None)
                 if asset_id:
                     float_value, int_value = properties_map.get(asset_id, (None, None))
-                if float_value is not None and int_value is not None:
-                    result.append(
-                        [
-                            market_hash_name,
-                            int(classid),
-                            int(instanceid),
-                            int(asset_id),
-                            marketable_time,
-                            float(float_value),
-                            int(int_value),
-                        ]
-                    )
                 else:
-                    result.append(
-                        [
-                            market_hash_name,
-                            int(classid),
-                            int(instanceid),
-                            int(asset_id),
-                            marketable_time,
-                            float_value,
-                            int_value,
-                        ]
+                    asset_id = 0
+                result.append(
+                    obj.UserInventory(
+                        name=market_hash_name,
+                        class_id=classid,
+                        instance_id=instanceid,
+                        asset_id=asset_id,
+                        marketable_time=marketable_time,
+                        float_value=float_value,
+                        int_value=int_value,
                     )
+                )
+
             return result
         else:
             self.logger.error(
@@ -381,7 +316,7 @@ class SteamMarketParser:
         Возвращает данные своих ордеров на покупку и баланс.
 
         Returns:
-            (total_sum, my_wallet, my_buy_orders)
+            (total_sum, my_wallet, obj.UserBuyOrders, obj.UserSellOrders)
         """
         url = "https://steamcommunity.com/market/"
 
@@ -397,15 +332,25 @@ class SteamMarketParser:
         total_buyorders = 0.0
         wallet_balance = 0.0
         buy_orders = []
+        sell_orders = []
 
         # ===== BUY_ORDERS =====
         my_buy_order_rows = soup.find_all("div", id=re.compile(r"^mybuyorder_\d+$"))
 
         for row in my_buy_order_rows:
-            # ===== ORDER ID =====
-            full_id = row.get("id")  # "mybuyorder_123456789"
-            order_id = full_id.split("_")[1]  # "123456789"
+            full_id = row.get("id")
 
+            if not isinstance(full_id, str):
+                self.logger.warning("Missing or invalid id: %s", full_id)
+                continue
+
+            parts = full_id.split("_")
+
+            if len(parts) != 2 or not parts[1].isdigit():
+                self.logger.warning("Bad id format: %s", full_id)
+                continue
+
+            order_id = int(parts[1])
             # ===== NAME =====
             name_tag = row.select_one(".market_listing_item_name_link")
             if not name_tag:
@@ -437,24 +382,27 @@ class SteamMarketParser:
 
             # ===== STORE RESULT =====
             buy_orders.append(
-                {
-                    "buy_order_id": order_id,
-                    "name": skin_name,
-                    "price": price,
-                    "qty": qty,
-                }
+                obj.UserBuyOrders(id=order_id, name=skin_name, price=price, qty=qty)
             )
 
-        sell_orders = []
         self.logger.debug(f"len(sell_orders): {len(sell_orders)}")
         # ===== SELL_ORDERS =====
         my_sell_rows = soup.find_all("div", id=re.compile(r"^mylisting_\d+$"))
 
         for row in my_sell_rows:
-            # ===== ORDER ID =====
-            full_id = row.get("id")  # "mylisting_792205646637449623"
-            order_id = full_id.split("_")[1]  # "792205646637449623"
+            full_id = row.get("id")
 
+            if not isinstance(full_id, str):
+                self.logger.warning("Missing or invalid id: %s", full_id)
+                continue
+
+            parts = full_id.split("_")
+
+            if len(parts) != 2 or not parts[1].isdigit():
+                self.logger.warning("Bad id format: %s", full_id)
+                continue
+
+            order_id = int(parts[1])
             # ===== NAME =====
             name_tag = row.select_one(".market_listing_item_name_link")
             if not name_tag:
@@ -486,12 +434,9 @@ class SteamMarketParser:
 
             # ===== STORE RESULT =====
             sell_orders.append(
-                {
-                    "sell_order_id": order_id,
-                    "name": skin_name,
-                    "date": date_text,
-                    "price": price,
-                }
+                obj.UserSellOrders(
+                    id=order_id, name=skin_name, date=date_text, price=price
+                )
             )
 
         # ===== WALLET =====
@@ -509,7 +454,7 @@ class SteamMarketParser:
         """
         Docstring for get_my_history
 
-        Returns: (assetid, market_name, price, acted_on_str, listed_on_str, gain_loss)
+        Returns: [[obj.MyHistory], [...]]
         """
         url = f"https://steamcommunity.com/market/myhistory/render/?query=&start={start}&count={step}"
         resp = self.session.get(url, timeout=15, allow_redirects=True)
@@ -572,9 +517,21 @@ class SteamMarketParser:
             listed_on_str = (
                 listed_date_elem[1].text.strip() if len(listed_date_elem) > 1 else None
             )
+            if price is None or acted_on_str is None or listed_on_str is None:
+                self.logger.error(
+                    f"my history items isnt full price: {price}, acted_on_str:{acted_on_str}, listed_on_str:{listed_on_str}"
+                )
+                raise Exception
 
             history_items.append(
-                [assetid, market_name, price, acted_on_str, listed_on_str, gain_loss]
+                obj.UserHistory(
+                    asset_id=assetid,
+                    name=market_name,
+                    price=price,
+                    acted_on=acted_on_str,
+                    listed_on=listed_on_str,
+                    gain_loss=gain_loss,
+                )
             )
 
         return history_items, total_count

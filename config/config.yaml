@@ -1,4 +1,36 @@
 place_orders:
   user_want:
     ['Huntsman Knife', 'Neo-Noir']
-  deapth_of_thirst: 3
+  deapth_of_thirst: 1
+  dot_multiplier: 5
+
+parser:
+  steam_appid: 730
+  orders_cache_days: 1
+  prices_cache_days: 3  
+  analysis_cache_days: 3
+  max_retries: 5
+  retry_delay_range: [360, 720]
+  currency: 37
+  country: "KZ"
+
+sell_skins:
+  min_float_value: 0.01
+  steam_fee: 0.87
+  min_margin_percent: 0
+  dont_touch: []
+  over_price: []
+  op_multiplier: 1.1
+
+analysis:
+  approx_multiplier: 3
+  factor: 0.2
+  q_arr: [25, 75]
+  down_trende_muliplier: 0.86
+  up_trende_multiplier: 0.85
+  volume_limit_multiplier: 1.7
+  price_zone_percentage: 0.4
+  min_walls: 3
+  max_walls: 8
+  boost_threshold: 10
+  volatility_threshold: 18

@@ -2,17 +2,21 @@ from collections import defaultdict
 from datetime import datetime, timezone
 import numpy as np
 import logging
+import core.objects as obj
+from typing import List
 
 
-
-def aggregate_daily(history):
+def aggregate_daily(history: List[obj.ItemPriceHistory]) -> List[obj.ItemPriceHistory]:
     log = logging.getLogger("aggregate_daily")
     if not history:
-        log.warning("aggregate_daily: empty history")
-        return
+        log.error("aggregate_daily: empty history")
+        raise NotImplementedError
 
     daily = defaultdict(list)
-    for dt, price, volume in history:
+    for item in history:
+        dt = item.date
+        price = item.price
+        volume = item.volume
         daily[dt.date()].append((price, volume))
 
     aggregated = []
@@ -24,52 +28,52 @@ def aggregate_daily(history):
             log.debug("Skipping day %s: no valid prices", day)
             continue
 
-        aggregated.append([
-            datetime(day.year, day.month, day.day, tzinfo=timezone.utc),
-            sum(prices) / len(prices),
-            sum(volumes)
-        ])
+        aggregated.append(
+            obj.ItemPriceHistory(
+                date=datetime(day.year, day.month, day.day, tzinfo=timezone.utc),
+                price=sum(prices) / len(prices),
+                volume=sum(volumes),
+            )
+        )
 
-    history = sorted(aggregated, key=lambda r: r[0])
+    history = sorted(aggregated, key=lambda r: r.date)
     log.debug("aggregate_daily result size: %d", len(history))
     return history
 
 
-
-
-def remove_price_outliers_iqr(raw_history, factor: float = 0.2):
+def remove_price_outliers_iqr(
+    raw_history: List[obj.ItemPriceHistory], factor: float, q_arr: List
+) -> List[obj.ItemPriceHistory]:
     log = logging.getLogger("outliers_iqr")
     if not raw_history:
-        log.warning("remove_price_outliers_iqr called on empty raw_history")
-        return
+        log.error("remove_price_outliers_iqr called on empty raw_history")
+        raise NotImplementedError
 
     monthly = defaultdict(list)
     for rec in raw_history:
-        monthly[(rec[0].year, rec[0].month)].append(rec)
+        monthly[(rec.date.year, rec.date.month)].append(rec)
 
     cleaned = []
 
     for key, records in monthly.items():
-        prices = np.array([r[1] for r in records if r[1] is not None])
+        prices = np.array([r.price for r in records if r.price is not None])
 
         if len(prices) < 4:
             cleaned.extend(records)
             continue
 
-        q1, q3 = np.percentile(prices, [25, 75])
+        q1, q3 = np.percentile(prices, q_arr)
         iqr = q3 - q1
         low, high = q1 - factor * iqr, q3 + factor * iqr
 
-        filtered = [r for r in records if r[1] is not None and low <= r[1] <= high]
+        filtered = [
+            r for r in records if r.price is not None and low <= r.price <= high
+        ]
 
-
-        log.debug(
-            "[%s] IQR cleaned %d → %d",
-            key, len(records), len(filtered)
-        )
+        log.debug("[%s] IQR cleaned %d → %d", key, len(records), len(filtered))
 
         cleaned.extend(filtered)
 
-    history = sorted(cleaned, key=lambda r: r[0])
+    history = sorted(cleaned, key=lambda r: r.date)
     log.debug("History size after IQR cleaning: %d", len(history))
     return history
