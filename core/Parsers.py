@@ -26,8 +26,9 @@ class SteamMarketParser:
         self.cfg = config.parser
 
         self.logger = logging.getLogger(__name__)
-
-        self.market_data = obj.ItemMarketData
+        self.history = []
+        self.buy_orders = []
+        self.sell_orders = []
 
     def load_skin(self, skin: obj.Skin) -> None:
         self.skin = skin
@@ -148,8 +149,8 @@ class SteamMarketParser:
             _buy_orders = obj.parse_orders(data.get("buy_order_graph", []))
             _sell_orders = obj.parse_orders(data.get("sell_order_graph", []))
 
-            self.market_data.buy_orders = _buy_orders
-            self.market_data.sell_orders = _sell_orders
+            self.buy_orders = _buy_orders
+            self.sell_orders = _sell_orders
 
             # self.db.insert_or_update_orders(                      TODO: remake db fro list[list] to list[obj]
             #    self.skin.id, self._buy_orders, self._sell_orders
@@ -168,8 +169,8 @@ class SteamMarketParser:
                 _buy_orders, _sell_orders = result
                 _buy_orders = obj.parse_orders(_buy_orders)
                 _sell_orders = obj.parse_orders(_sell_orders)
-                self.market_data.buy_orders = _buy_orders
-                self.market_data.sell_orders = _sell_orders
+                self.buy_orders = _buy_orders
+                self.sell_orders = _sell_orders
             else:
                 self.logger.error(
                     "No cached orders found for skin_id=%s, refetching",
@@ -183,7 +184,7 @@ class SteamMarketParser:
         ):
             self.logger.debug("Prices fetching from Steam API")
             _price_history = self._fetch_price_history()
-            self.market_data.history = _price_history
+            self.history = _price_history
 
             # Сохраняем ТОЛЬКО сырую историю
             # self.db.update_price_history(self.skin.id, self._price_history)
@@ -209,7 +210,7 @@ class SteamMarketParser:
                     obj.ItemPriceHistory(date=row[0], price=row[1], volume=row[2])
                     for row in rows
                 ]
-                self.market_data.history = _price_history
+                self.history = _price_history
             else:
                 self.logger.error(
                     "No cached price history for skin_id=%s, refetching", self.skin.id
@@ -218,11 +219,17 @@ class SteamMarketParser:
 
     def get_data(
         self,
-    ):
+    ) -> obj.ItemMarketData:
         self._update_orders_cache()
         self._update_prices_cache()
-        tmp_market_data = self.market_data
-        return tmp_market_data
+        market_data = obj.ItemMarketData(
+            history=self.history,
+            buy_orders=self.buy_orders,
+            sell_orders=self.sell_orders,
+            skin=self.skin,
+        )
+
+        return market_data
 
     def update_data(self):
         """Принудительно обновляет ордера и историю цен"""

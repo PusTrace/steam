@@ -1,3 +1,15 @@
+# Назначение:
+# - Превращают грязные данные в пригодные.
+# Имеют право:
+# - удалять мусор
+# - сортировать
+# - агрегировать
+# - дедуплицировать
+# - нормализовывать
+# НЕ имеют права:
+# - принимать решения
+# - считать сигналы
+# - анализировать рынок
 from collections import defaultdict
 from datetime import datetime, timezone
 import numpy as np
@@ -5,9 +17,11 @@ import logging
 import core.objects as obj
 from typing import List
 
+log = logging.getLogger("analysis.cleaners")
+
 
 def aggregate_daily(history: List[obj.ItemPriceHistory]) -> List[obj.ItemPriceHistory]:
-    log = logging.getLogger("aggregate_daily")
+    log = logging.getLogger("analysis.cleaners.aggregate_daily")
     if not history:
         log.error("aggregate_daily: empty history")
         raise NotImplementedError
@@ -44,7 +58,7 @@ def aggregate_daily(history: List[obj.ItemPriceHistory]) -> List[obj.ItemPriceHi
 def remove_price_outliers_iqr(
     raw_history: List[obj.ItemPriceHistory], factor: float, q_arr: List
 ) -> List[obj.ItemPriceHistory]:
-    log = logging.getLogger("outliers_iqr")
+    log = logging.getLogger("analysis.filters.outliers_iqr")
     if not raw_history:
         log.error("remove_price_outliers_iqr called on empty raw_history")
         raise NotImplementedError
@@ -54,8 +68,9 @@ def remove_price_outliers_iqr(
         monthly[(rec.date.year, rec.date.month)].append(rec)
 
     cleaned = []
+    cleaned_inc = 0
 
-    for key, records in monthly.items():
+    for _, records in monthly.items():
         prices = np.array([r.price for r in records if r.price is not None])
 
         if len(prices) < 4:
@@ -69,11 +84,34 @@ def remove_price_outliers_iqr(
         filtered = [
             r for r in records if r.price is not None and low <= r.price <= high
         ]
-
-        log.debug("[%s] IQR cleaned %d → %d", key, len(records), len(filtered))
-
+        cleaned_inc += 1
         cleaned.extend(filtered)
-
+    log.debug(f"cleaned: {cleaned_inc}")
     history = sorted(cleaned, key=lambda r: r.date)
     log.debug("History size after IQR cleaning: %d", len(history))
+    return history
+
+
+def extract_prices(history):
+    return [h.price for h in history if h.price is not None]
+
+
+def extract_year_prices(history, cutoff):
+    return [h.price for h in history if h.price and h.date >= cutoff]
+
+
+def sort_history(history):
+    return sorted(history, key=lambda r: r.date) if history else []
+
+
+def prepare_history(history, factor, q_arr):
+
+    history = aggregate_daily(history)
+
+    history = remove_price_outliers_iqr(
+        history,
+        factor,
+        q_arr,
+    )
+
     return history

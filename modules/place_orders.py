@@ -19,7 +19,6 @@ from core.Parsers import SteamMarketParser
 from core.steam.api import create_buy_order
 from core.steam.confirmation import accept_all_confirmations
 from core.steam.cookies import get_identity_secret
-from core.my_data_classes import load_config
 
 log = logging.getLogger("place_orders")
 

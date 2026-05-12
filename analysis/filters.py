@@ -1,450 +1,68 @@
+# Назначение
+# проверка предмета
+# Их задача:
+# Решить:
+# continue / reject
+# Они используют:
+# - features
+# - cleaned data
+# Они НЕ должны:
+# - считать сложную математику
+# - мутировать данные
+# - orchestration
+
 import logging
-from typing import Optional, List, Dict
-from datetime import datetime, timedelta, timezone
 import core.objects as obj
+import analysis.cleaners as cleaners
+import analysis.features as features
+from datetime import datetime, timedelta, timezone
+
+log = logging.getLogger("analysis.filters")
 
 
-class OrderBookAnalyzer:
-    """Анализатор стаканов ордеров — поиск стенок ликвидности"""
+def filter_by_threshold(buy_orders, threshold: float):
+    return [o for o in buy_orders if o.price <= threshold]
 
-    def __init__(self, cfg: obj.AnalysisConfig):
-        self.log = logging.getLogger(__name__)
 
-        self.down_trende_muliplier = cfg.down_trende_muliplier
-        self.up_trende_multiplier = cfg.up_trende_multiplier
-        self.volume_limit_multiplier = cfg.volume_limit_multiplier
-        self.price_zone_percentage = cfg.price_zone_percentage
-        self.min_walls = cfg.min_walls
-        self.max_walls = cfg.max_walls
+def filter_price_zone(orders, threshold, percentage):
+    min_price = orders[-1].price
+    price_range = threshold - min_price
+    min_realistic = threshold - (price_range * percentage)
+    return [o for o in orders if o.price >= min_realistic]
 
-    def analyze(
-        self,
-        buy_orders: List[obj.ItemOrder],
-        sell_orders: List[obj.ItemOrder],
-        processed: obj.ItemProcessed,
-    ):
 
-        self.buy_orders = buy_orders
-        self.sell_orders = sell_orders
-        self.avg_week_price = processed.avg_week
-        self.slope_1m = processed.slope_1m
-        self.volume_week = processed.volume
-
-        # Определяем количество для покупки на основе тренда
-        amount = 2 if processed.slope_1m < 0 else 1
-
-        self.log.debug("=== ORDER BOOK ANALYSIS ===")
-        self.log.debug(
-            f"Purchase amount: {amount} (based on {'uptrend' if processed.slope_1m < 0 else 'downtrend'})"
-        )
-
-        # Вычисляем динамический порог
-        threshold_top = self._calculate_threshold()
-        if threshold_top is None:
-            self.log.debug("Threshold calculation failed, aborting")
-            return None, None
-
-        # Фильтруем ордера в пределах порога
-        orders_in_range = [item for item in buy_orders if item.price <= threshold_top]
-
-        self.log.debug(
-            f"Orders within threshold: {len(orders_in_range)} / {len(buy_orders)}"
-        )
-
-        if len(orders_in_range) < 4:
-            self.log.warning(f"Too few orders in range: {len(orders_in_range)} < 4")
-            return None, None
-
-        # Ограничиваем зону поиска
-        realistic_orders = self._filter_price_zone(orders_in_range, threshold_top)
-        if not realistic_orders:
-            self.log.warning("No orders in realistic price zone")
-            return None, None
-
-        # Ищем стенки ликвидности
-        liquidity_walls = self._find_liquidity_walls(realistic_orders)
-        if not liquidity_walls:
-            self.log.warning("No liquidity walls detected")
-            return None, None
-
-        # Выбираем лучшую стенку
-        target_price = self._select_best_wall(liquidity_walls)
-
-        return round(target_price, 2), amount
-
-    def _calculate_threshold(self) -> Optional[float]:
-        """Вычисляет динамический порог для фильтрации ордеров"""
-
-        self.log.debug("=== DYNAMIC THRESHOLDS CALCULATION ===")
-
-        # Средняя по топ-5 sell orders
-        top_sell_orders = self.sell_orders[:5]
-        avg_sell_price = sum(order.price for order in top_sell_orders) / len(
-            top_sell_orders
-        )
-
-        self.log.debug(
-            f"Top {len(top_sell_orders)} sell orders: {[f'{o.price:.2f}₸' for o in top_sell_orders]}"
-        )
-        self.log.debug(f"Average sell price: {avg_sell_price:.2f}₸")
-
-        # Берём минимум между средней недельной ценой и средней sell orders
-
-        values = [v for v in (self.avg_week_price, avg_sell_price) if v is not None]
-
-        if not values:
-            self.log.error("both price None")
-            return None  # или raise
-
-        threshold_price = min(values)
-
-        self.threshold_price = threshold_price
-
-        self.log.debug(f"avg_week_price: {self.avg_week_price}₸")
-        self.log.debug(f"threshold_price (min of both): {threshold_price}₸")
-        self.log.debug(
-            f"Using: {'avg_week' if threshold_price == self.avg_week_price else 'avg_sell'}"
-        )
-
-        # Определяем множитель в зависимости от тренда
-        if self.slope_1m < 0:
-            multiplier = self.down_trende_multiplier
-            trend = "DOWNTREND"
-        else:
-            multiplier = self.up_trende_multiplier
-            trend = "UPTREND"
-
-        default_threshold_top = threshold_price * multiplier
-
-        self.log.debug(f"Market trend: {trend} (slope_1m={self.slope_1m:.4f})")
-        self.log.debug(
-            f"Multiplier: {multiplier} → default_threshold_top: {default_threshold_top:.2f}₸"
-        )
-        self.log.debug(f"Looking for first order below {default_threshold_top:.2f}₸...")
-
-        # Ищем первый ордер ниже порога
-        try:
-            matching_order = next(
-                order
-                for order in self.buy_orders
-                if order.price < default_threshold_top
-            )
-        except StopIteration:
-            self.log.error(
-                f"No orders found below threshold {default_threshold_top:.2f}₸"
-            )
-
-            closest_order = min(
-                self.buy_orders, key=lambda x: abs(x.price - default_threshold_top)
-            )
-            self.log.debug(
-                f"Closest order: {closest_order.price:.2f}₸ (diff: {closest_order.price - default_threshold_top:+.2f}₸)"
-            )
+def to_valid(processed: obj.RawProcessed) -> obj.ItemProcessed | None:
+    for field_name in processed.__dataclass_fields__:
+        if getattr(processed, field_name) is None:
             return None
 
-        threshold_top = matching_order.price
-        order_volume = matching_order.qty
-        volume_limit = self.volume_week * self.volume_limit_multiplier
+    return obj.ItemProcessed(**processed.__dict__)
 
-        self.log.debug(
-            f"Found matching order: price={threshold_top:.2f}₸, volume={order_volume}"
-        )
-        self.log.debug(
-            f"Volume check: {order_volume} < {volume_limit:.0f} (volume * 1.7)?"
-        )
 
-        # Проверка объёма
-        if order_volume < volume_limit:
-            self.log.info(f"✓ Threshold accepted: {threshold_top:.2f}₸")
+def is_market_pumped(history, boost_threshold, volatility_threshold):
 
-            self.log.debug(f"Volume OK: {order_volume} < {volume_limit:.0f}")
-            discount_pct = (1 - threshold_top / self.avg_week_price) * 100
-            self.log.debug(f"Discount from avg_week: {discount_pct:.1f}%")
-            return threshold_top
-        else:
-            self.log.warning(
-                f"Order volume too high: {order_volume} > {volume_limit:.0f}, skipping"
-            )
+    if len(history) < 20:
+        return True
 
-            excess_pct = (order_volume / volume_limit - 1) * 100
-            self.log.debug(f"Volume excess: +{excess_pct:.1f}%")
-            return None
+    prices = cleaners.extract_prices(history)
 
-    def _filter_price_zone(
-        self, orders_in_range: List[obj.ItemOrder], threshold_top: float
-    ) -> List:
-        """Ограничивает зону поиска в пределах разумного диапазона цен"""
+    if len(prices) < 20:
+        return True
 
-        min_price = orders_in_range[-1].price
-        price_range = threshold_top - min_price
+    cutoff = datetime.now(timezone.utc) - timedelta(days=365)
 
-        # Настраиваемый параметр для зоны поиска
-        min_realistic_price = threshold_top - (price_range * self.price_zone_percentage)
+    year_prices = cleaners.extract_year_prices(history, cutoff)
 
-        realistic_orders = [
-            o for o in orders_in_range if o.price >= min_realistic_price
-        ]
+    boost = features.price_boost(prices, year_prices)
 
-        self.log.debug("=== PRICE ZONE FILTERING ===")
-        self.log.debug(
-            f"Full price range: {threshold_top:.2f}₸ → {min_price:.2f}₸ (span: {price_range:.2f}₸)"
-        )
-        self.log.debug(
-            f"Initial zone: top {self.price_zone_percentage*100:.0f}% → min_price: {min_realistic_price:.2f}₸"
-        )
-        self.log.debug(f"Orders in initial zone: {len(realistic_orders)}")
+    if boost >= boost_threshold:
+        log.info(f"Boost {boost:.1f}%")
+        return True
 
-        # Расширяем зону если слишком мало ордеров
-        if len(realistic_orders) < 3:
-            PRICE_ZONE_PERCENTAGE = 0.6
-            min_realistic_price = threshold_top - (price_range * PRICE_ZONE_PERCENTAGE)
-            realistic_orders = [
-                o for o in orders_in_range if o.price >= min_realistic_price
-            ]
+    vol = features.volatility(prices)
 
-            self.log.debug(
-                f"Zone expanded to {PRICE_ZONE_PERCENTAGE*100:.0f}% → min_price: {min_realistic_price:.2f}₸"
-            )
-            self.log.debug(f"Orders in expanded zone: {len(realistic_orders)}")
+    if vol > volatility_threshold:
+        log.info(f"Volatility too high: {vol:.1f}%")
+        return True
 
-        if realistic_orders:
-            self.log.debug(
-                f"Realistic price span: {realistic_orders[0].price:.2f}₸ → {realistic_orders[-1].price:.2f}₸"
-            )
-            self.log.debug(
-                f"Volume in zone: {realistic_orders[0].qty} → {realistic_orders[-1].qty}"
-            )
-
-        return realistic_orders
-
-    def _find_liquidity_walls(
-        self, realistic_orders: List[obj.ItemOrder]
-    ) -> List[Dict]:
-        """Собирает данные о стенах ликвидности"""
-
-        liquidity_walls = []
-
-        for i in range(len(realistic_orders) - 1):
-            current_order = realistic_orders[i]
-            next_order = realistic_orders[i + 1]
-
-            current_price = current_order.price
-            current_volume = current_order.qty
-            next_volume = next_order.qty
-
-            volume_jump = next_volume - current_volume
-            volume_growth_pct = (
-                (volume_jump / current_volume * 100) if current_volume > 0 else 0
-            )
-            wall_score = volume_jump * (1 + volume_growth_pct / 100)
-
-            liquidity_walls.append(
-                {
-                    "price": current_price,
-                    "volume_jump": volume_jump,
-                    "volume_growth_pct": volume_growth_pct,
-                    "score": wall_score,
-                    "cumulative_before": current_volume,
-                    "cumulative_after": next_volume,
-                }
-            )
-
-        if not liquidity_walls:
-            return []
-
-        # Сортируем по скору
-        liquidity_walls.sort(key=lambda x: x["score"], reverse=True)
-
-        # Статистика
-        all_jumps = [w["volume_jump"] for w in liquidity_walls]
-        mean_jump = sum(all_jumps) / len(all_jumps)
-        variance = sum((j - mean_jump) ** 2 for j in all_jumps) / len(all_jumps)
-        stdev_jump = variance**0.5
-        significance_threshold = mean_jump + 0.5 * stdev_jump
-
-        self.log.debug("=== WALL STATISTICS ===")
-        self.log.debug(f"Total walls detected: {len(liquidity_walls)}")
-        self.log.debug(f"Mean volume jump: {mean_jump:.2f}")
-        self.log.debug(f"Standard deviation: {stdev_jump:.2f}")
-        self.log.debug(f"Significance threshold: {significance_threshold:.2f}")
-        self.log.debug(
-            f"Min jump: {min(all_jumps):.2f}, Max jump: {max(all_jumps):.2f}"
-        )
-
-        # Отбираем значимые стенки
-        min_walls = self.min_walls
-        max_walls = self.max_walls
-
-        significant_walls = [
-            w for w in liquidity_walls if w["volume_jump"] > significance_threshold
-        ]
-
-        if len(significant_walls) < min_walls:
-            candidate_walls = (
-                liquidity_walls[:min_walls]
-                if len(liquidity_walls) >= min_walls
-                else liquidity_walls
-            )
-
-            self.log.debug(
-                f"Only {len(significant_walls)} significant walls, using top {len(candidate_walls)}"
-            )
-        else:
-            candidate_walls = significant_walls[:max_walls]
-
-            self.log.debug(
-                f"Found {len(significant_walls)} significant walls, using top {len(candidate_walls)}"
-            )
-
-        if candidate_walls:
-            self.log.debug(f"=== TOP {len(candidate_walls)} CANDIDATE WALLS ===")
-            for i, wall in enumerate(candidate_walls, 1):
-                self.log.debug(
-                    f"{i}. Price: {wall['price']:.2f}₸ | "
-                    f"Jump: {wall['volume_jump']} (+{wall['volume_growth_pct']:.1f}%) | "
-                    f"Score: {wall['score']:.2f}"
-                )
-                self.log.debug(
-                    f"   Volume transition: {wall['cumulative_before']} → {wall['cumulative_after']}"
-                )
-
-        return candidate_walls
-
-    def _select_best_wall(self, candidate_walls: List[Dict]) -> float:
-        """Выбирает самую высокую цену среди кандидатов"""
-
-        best_wall = max(candidate_walls, key=lambda x: x["price"])
-        target_price = best_wall["price"] + self.avg_week_price * 0.001
-
-        self.log.debug("=== WALL SELECTION ===")
-        self.log.debug(f"Selected wall price: {best_wall['price']:.2f}₸")
-        self.log.debug(
-            f"Volume jump at wall: {best_wall['volume_jump']} (+{best_wall['volume_growth_pct']:.1f}%)"
-        )
-        self.log.debug(f"Wall score: {best_wall['score']:.2f}")
-        self.log.debug(f"Micro adjustment: +{self.avg_week_price * 0.001:.2f}₸")
-        self.log.debug(f"Final target price: {target_price:.2f}₸")
-
-        discount_from_threshold = (1 - target_price / self.threshold_price) * 100
-        discount_from_week = (1 - target_price / self.avg_week_price) * 100
-
-        self.log.debug("=== PRICE ANALYSIS ===")
-        self.log.debug(f"Target vs threshold: {discount_from_threshold:.1f}% discount")
-        self.log.debug(f"Target vs avg_week: {discount_from_week:.1f}% discount")
-
-        self.log.info(
-            f"✓ Selected wall: {target_price:.2f}₸ "
-            f"(threshold: {self.threshold_price:.2f}₸, "
-            f"volume_jump: {best_wall['volume_jump']})"
-        )
-
-        return target_price
-
-
-class PumpDetector:
-
-    def __init__(self, cfg: obj.AnalysisConfig):
-        self.BOOST_THRESHOLD = cfg.boost_threshold  # рост цены >10% (памп)
-        self.VOLATILITY_THRESHOLD = cfg.volatility_threshold
-        self.log = logging.getLogger(__name__)
-
-    def check(self, history: List[obj.ItemPriceHistory]):
-
-        self.log.debug("=== PUMP DETECTION ===")
-
-        if len(history) < 20:
-            self.log.debug("Недостаточно данных для анализа (<20 записей)")
-            return True
-
-        # Извлекаем только цены
-        prices = [item.price for item in history if item.price is not None]
-        year_ago = datetime.now(tz=timezone.utc) - timedelta(365)
-        year_prices = [
-            item.price
-            for item in history
-            if item.price is not None and item.date >= year_ago
-        ]
-        if len(prices) < 20:
-            return True
-
-        # === 1. Проверка на ПАМП (буст цены) ===
-        boost_check = self._check_price_boost(prices, year_prices)
-
-        self.log.debug(f"[BOOST] {boost_check['reason']}")
-        if boost_check["detected"]:
-            return True
-
-        # === 2. Проверка волатильности ===
-        volatility_check = self._check_volatility(prices)
-
-        self.log.debug(f"[VOLATILITY] {volatility_check['reason']}")
-        if volatility_check["detected"]:
-            return True
-
-        return False
-
-    def _check_price_boost(self, prices: List[float], year_prices: List[float]) -> dict:
-        """
-        Проверка на памп (буст цены).
-        Сравниваем медиану последних 50 продаж с медианой истории за год.
-        """
-        if len(prices) < 50:
-            return {"detected": False, "reason": ""}
-
-        # Первая половина истории = baseline
-
-        # Последние 50 продаж
-        last_50 = prices[-50:]
-
-        # Считаем медианы
-        baseline_median = self._median(year_prices)
-        recent_median = self._median(last_50)
-
-        self.log.debug(
-            f"baseline_median: {baseline_median}, recent_median:{recent_median}"
-        )
-
-        # Процент роста
-        boost_pct = ((recent_median - baseline_median) / baseline_median) * 100
-
-        if boost_pct >= self.BOOST_THRESHOLD:
-            return {
-                "detected": True,
-                "reason": f"Обнаружен буст цены (рост на {boost_pct:.1f}%)",
-            }
-
-        return {"detected": False, "reason": ""}
-
-    def _check_volatility(self, prices: List[float]) -> dict:
-        """
-        Проверка волатильности.
-        Средний процент изменения между соседними продажами.
-        """
-        if len(prices) < 2:
-            return {"detected": False, "reason": ""}
-
-        total_change = 0
-        for i in range(1, len(prices)):
-            if prices[i - 1] != 0:
-                change = abs((prices[i] - prices[i - 1]) / prices[i - 1]) * 100
-                total_change += change
-
-        volatility = total_change / (len(prices) - 1)
-
-        if volatility > self.VOLATILITY_THRESHOLD:
-            return {
-                "detected": True,
-                "reason": f"Высокая волатильность ({volatility:.1f}%)",
-            }
-
-        return {"detected": False, "reason": ""}
-
-    def _median(self, arr: List[float]) -> float:
-        """Вычисляет медиану массива"""
-        sorted_arr = sorted(arr)
-        mid = len(sorted_arr) // 2
-
-        if len(sorted_arr) % 2 == 0:
-            return (sorted_arr[mid - 1] + sorted_arr[mid]) / 2
-        else:
-            return sorted_arr[mid]
+    return False

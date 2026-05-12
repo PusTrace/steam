@@ -1,13 +1,22 @@
-# analysis/strategies.py
+# Strategy должна:
+# только:
+# - вызывать pipeline
+# - комбинировать сигналы
+# - принимать итоговое решение
+# Strategy НЕ должна:
+# - считать regression
+# - фильтровать массивы
+# - искать median
+# - чистить данные
 
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import core.objects as obj
 import analysis.cleaners as cleaners
 import analysis.features as features
 import analysis.filters as filters
-import analysis.plot as plot
 
 log = logging.getLogger("strategy")
 
@@ -16,31 +25,19 @@ class BaseStrategy:
     def process(self, market_data: obj.ItemMarketData):
         raise NotImplementedError
 
-    def decide(
-        self,
-        processed: obj.ItemProcessed,
-        market_data: obj.ItemMarketData,
-        clean_history: List[obj.ItemPriceHistory],
-    ):
+    def decide(self, processed: obj.ItemProcessed, market_data: obj.ItemMarketData):
         raise NotImplementedError
 
 
 class EVA(BaseStrategy):
 
-    def __init__(self):
+    def __init__(self, plot):
         config = obj.load_config()
         cfg = config.analysis
-        self.order_book_analyzer = filters.OrderBookAnalyzer(cfg=cfg)
-        self.pump_detector = filters.PumpDetector(cfg=cfg)
-        self.plot = False
+        self.plot = plot
         self.cfg = cfg
 
-    def decide(
-        self,
-        processed: obj.ItemProcessed,
-        market_data: obj.ItemMarketData,
-        clean_history: List[obj.ItemPriceHistory],
-    ):
+    def decide(self, processed: obj.ItemProcessed, market_data: obj.ItemMarketData):
         raw_history = market_data.history
         buy_orders = market_data.buy_orders
         sell_orders = market_data.sell_orders
@@ -50,32 +47,18 @@ class EVA(BaseStrategy):
             return None, None
 
         # === ФИЛЬТР 1: Проверка на памп/дамп ===
-        pump_indicator = self.pump_detector.check(
-            history=clean_history,
-        )
-
-        if pump_indicator:
-            return None, None
-
-        # === ФИЛЬТР 2: Предварительные проверки ===
-        if len(buy_orders) <= 0:
-            log.error("No buy orders available, skipping")
-            return None, None
-
-        if len(sell_orders) <= 0:
-            log.error("No sell orders available, skipping")
-            return None, None
-
-        log.debug(
-            f"Market depth: {len(buy_orders)} buy orders, {len(sell_orders)} sell orders"
-        )
+        if filters.is_market_pumped(
+            raw_history,
+            self.cfg.boost_threshold,
+            self.cfg.volatility_threshold,
+        ):
+            return None
 
         # === АНАЛИЗ СТАКАНОВ ===
-        price, amount = self.order_book_analyzer.analyze(
-            buy_orders=buy_orders, sell_orders=sell_orders, processed=processed
-        )
+        result = self.check_order_book(market_data=market_data, processed=processed)
 
-        if price is not None:
+        if result is not None:
+            price, amount = result
             log.info(f"✓ BUY DECISION: {price:.2f}₸ x{amount}")
             if processed.avg_week is not None:
                 discount = (1 - price / processed.avg_week) * 100
@@ -85,11 +68,13 @@ class EVA(BaseStrategy):
                     f"Price vs moment: {((price / processed.moment - 1) * 100):+.1f}%"
                 )
         else:
-            log.info("✗ SKIP: no suitable price found")
+            log.info("✗ SKIP")
 
-        return price, amount
+        return result
 
-    def process(self, market_data: obj.ItemMarketData):
+    def process(
+        self, market_data: obj.ItemMarketData
+    ) -> tuple[obj.ItemProcessed, List[obj.ItemPriceHistory]] | None:
         raw_history = market_data.history
         buy_orders = market_data.buy_orders
         sell_orders = market_data.sell_orders
@@ -98,76 +83,113 @@ class EVA(BaseStrategy):
             raw_history, self.cfg.approx_multiplier
         )
 
-        raw_history = cleaners.aggregate_daily(raw_history)
-
-        clean_history = cleaners.remove_price_outliers_iqr(
-            raw_history, self.cfg.factor, self.cfg.q_arr
+        clean_history = cleaners.prepare_history(
+            raw_history,
+            self.cfg.factor,
+            self.cfg.q_arr,
         )
 
-        analyzer = features.HistoryAnalyzer(clean_history)
+        history_features = features.build_history_features(clean_history)
 
-        slope_6m, _, _, _ = analyzer.linreg(analyzer.six_month_ago)
-        slope_1m, _, _, _ = analyzer.linreg(analyzer.one_month_ago)
+        ob_metrics = features.orders_metrics(
+            buy_orders=buy_orders, sell_orders=sell_orders
+        )
 
-        avg_month = analyzer.calc_avg(analyzer.one_month_ago)
-        avg_week = analyzer.calc_avg(analyzer.one_week_ago)
-
-        if self.plot:
-            plot.plot_analysis(raw_history, clean_history, slope_6m, slope_1m)
-
-        avg_5_sell_orders = sum(o.price for o in sell_orders[:5]) / 5
-        avg_5_buy_orders = sum(o.price for o in buy_orders[:5]) / 5
-        if buy_orders:
-            bid_depth = buy_orders[min(4, len(buy_orders) - 1)].qty
-            bid_depth = int(bid_depth)
-        else:
-            bid_depth = None  # или любое значение по умолчанию
-
-        spread = avg_5_sell_orders - avg_5_buy_orders
-        mid_price = (avg_5_sell_orders + avg_5_buy_orders) / 2
-
-        spread_percent = spread / mid_price  # например 0.05 = 5%
-
-        processed = obj.ItemProcessed(
-            slope_6m=slope_6m,
-            slope_1m=slope_1m,
-            avg_month=avg_month,
-            avg_week=avg_week,
+        processed = obj.RawProcessed(
+            weight=None,
+            slope_6m=history_features.linreg_6m_data.slope,
+            intercept_6m=history_features.linreg_6m_data.intercept,
+            slope_1m=history_features.linreg_1m_data.slope,
+            intercept_1m=history_features.linreg_1m_data.intercept,
+            avg_month=history_features.avg_month,
+            avg_week=history_features.avg_week,
             volume=volume,
             high=high,
             low=low,
             moment=moment,
-            avg_5_sell_orders=avg_5_sell_orders,
-            avg_5_buy_orders=avg_5_buy_orders,
-            spread=spread,
-            mid_price=mid_price,
-            spread_percent=spread_percent,
-            bid_depth=bid_depth,
+            avg_5_sell_orders=ob_metrics.avg_5_sell_orders,
+            avg_5_buy_orders=ob_metrics.avg_5_buy_orders,
+            spread=ob_metrics.spread,
+            mid_price=ob_metrics.mid_price,
+            spread_percent=ob_metrics.spread_percent,
+            bid_depth=ob_metrics.bid_depth,
         )
+
+        processed = features.item_weight(processed)
+
+        processed = filters.to_valid(processed)
+        if processed is None:
+            log.warning("Processed Validator return None")
+            return None
+
+        log.debug(f"weight: {processed.weight}")
         log.debug(f"processing_data: {processed}")
-        # analysis_id = self.db.update_skins_analysis(skin.id, data)
-        # self.db.commit()
 
         return processed, clean_history
+
+    def check_order_book(
+        self, processed: obj.ItemProcessed, market_data: obj.ItemMarketData
+    ) -> tuple[float, int] | None:
+
+        threshold = features.calculate_threshold(
+            processed.avg_week,
+            sum(o.price for o in market_data.sell_orders[:5]) / 5,
+            processed.slope_1m,
+            self.cfg.down_trende_multiplier,
+            self.cfg.up_trende_multiplier,
+        )
+
+        if threshold is None:
+            log.warning("threshold is None")
+            return None
+
+        orders = filters.filter_by_threshold(market_data.buy_orders, threshold)
+
+        if len(orders) < 1:
+            log.warning("len of orders < 1")
+            return None
+
+        zone = filters.filter_price_zone(
+            orders, threshold, self.cfg.price_zone_percentage
+        )
+
+        if not zone:
+            log.warning("[ZONE] is not found")
+            return None
+
+        walls = features.find_liquidity_walls(zone)
+        if not walls:
+            log.warning("[WALLS] are not found")
+            return None
+
+        price = features.select_best_wall(walls, processed.avg_week)
+        if processed.slope_1m is not None:
+            amount = 2 if processed.slope_1m < 0 else 1
+        else:
+            amount = 1
+
+        return round(price, 2), amount
 
 
 class PTModel:
     """Обёртка для разных стратегий торговли"""
 
-    def __init__(self, model_type: str):
+    def __init__(self, model_type: str, plot: bool):
 
         strategies = {"EVA": EVA}
 
         if model_type not in strategies:
             raise ValueError(f"Unknown model type: {model_type}")
 
-        self.strategy = strategies[model_type]()
+        self.strategy = strategies[model_type](plot=plot)
 
-    def decide(self, market_data: obj.ItemMarketData):
-        processed, clean_history = self.strategy.process(market_data)
-        return self.strategy.decide(
-            processed=processed, market_data=market_data, clean_history=clean_history
-        )
+    def decide(self, processed: obj.ItemProcessed, market_data: obj.ItemMarketData):
+        return self.strategy.decide(processed=processed, market_data=market_data)
 
     def process(self, market_data: obj.ItemMarketData):
         return self.strategy.process(market_data=market_data)
+
+
+def select_best_wall(walls, avg_week):
+    best = max(walls, key=lambda x: x["price"])
+    return best["price"] + avg_week * 0.001

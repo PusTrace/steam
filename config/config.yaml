@@ -26,7 +26,7 @@ analysis:
   approx_multiplier: 3
   factor: 0.2
   q_arr: [25, 75]
-  down_trende_muliplier: 0.86
+  down_trende_multiplier: 0.86
   up_trende_multiplier: 0.85
   volume_limit_multiplier: 1.7
   price_zone_percentage: 0.4
