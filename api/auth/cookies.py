@@ -3,13 +3,14 @@ from datetime import time
 import time
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parents[2]  # это steam/
+BASE_DIR = Path(__file__).resolve().parents[1]  # это steam/
 
 MA_FILE = BASE_DIR / "config/sda.json"
 COOKIES_FILE = BASE_DIR / "config/cookies.json"
 NODE_DIR = BASE_DIR / "core/node"
 
 COOKIE_MAX_AGE = 31536000  # требуемая "свежесть", например 1 год
+
 
 def read_cookies():
     try:
@@ -18,11 +19,13 @@ def read_cookies():
     except Exception:
         return None
 
+
 def is_fresh():
     if not os.path.exists(COOKIES_FILE):
         print("[is_fresh] cookies file does not exist")
         return False
     return time.time() - os.path.getmtime(COOKIES_FILE) < COOKIE_MAX_AGE
+
 
 def parse_cookie_array(cookies_array):
     cookies_by_domain = {}
@@ -51,14 +54,10 @@ def ensure_cookies(reload: bool = False):
 
     # иначе запускаем Node
     print("[ensure_cookies] cookies missing or expired, running Node...")
-    
 
     subprocess.run(
-        ["node", "core/node/get-cookies.js"],
-        cwd=BASE_DIR,   # steam
-        check=True
+        ["node", "core/node/get-cookies.js"], cwd=BASE_DIR, check=True  # steam
     )
-
 
     time.sleep(10)
     # ждём и читаем снова
@@ -66,15 +65,16 @@ def ensure_cookies(reload: bool = False):
     cookies = parse_cookie_array(payload)
     return cookies
 
+
 def get_identity_secret():
     try:
         with open(MA_FILE, "r") as f:
             data = json.load(f)
         return data.get("identity_secret")
     except Exception:
-        return None 
-    
-    
+        return None
+
+
 if __name__ == "__main__":
     print("force update cookies")
     ensure_cookies(True)

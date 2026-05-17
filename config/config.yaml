@@ -5,7 +5,7 @@ place_orders:
   dot_multiplier: 5
 
 parser:
-  steam_appid: 730
+  appid: 730
   orders_cache_days: 1
   prices_cache_days: 3  
   analysis_cache_days: 3
@@ -13,6 +13,7 @@ parser:
   retry_delay_range: [360, 720]
   currency: 37
   country: "KZ"
+  steam_id: 76561198857946351
 
 sell_skins:
   min_float_value: 0.01

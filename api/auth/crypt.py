@@ -4,14 +4,14 @@ import time
 
 
 # ------------------------------------------------------
-# 1. Время 
+# 1. Время
 # ------------------------------------------------------
 def steam_time(offset: int = 0) -> int:
     return int(time.time()) + offset
 
 
 # ------------------------------------------------------
-# 2. Преобразование секрета 
+# 2. Преобразование секрета
 # ------------------------------------------------------
 def bufferize_secret(secret: str | bytes) -> bytes:
     if isinstance(secret, bytes):
@@ -29,7 +29,7 @@ def bufferize_secret(secret: str | bytes) -> bytes:
 
 
 # ------------------------------------------------------
-# 3. Генерация TOTP-кода Steam 
+# 3. Генерация TOTP-кода Steam
 # ------------------------------------------------------
 def generate_auth_code(secret: str | bytes, time_offset: int = 0) -> str:
     """
@@ -49,7 +49,7 @@ def generate_auth_code(secret: str | bytes, time_offset: int = 0) -> str:
 
     # dynamic truncation
     start = hmac_hash[19] & 0x0F
-    code_int = int.from_bytes(hmac_hash[start:start+4], "big") & 0x7FFFFFFF
+    code_int = int.from_bytes(hmac_hash[start : start + 4], "big") & 0x7FFFFFFF
 
     chars = "23456789BCDFGHJKMNPQRTVWXY"
     result = ""
@@ -62,9 +62,11 @@ def generate_auth_code(secret: str | bytes, time_offset: int = 0) -> str:
 
 
 # ------------------------------------------------------
-# 4. Confirmation key 
+# 4. Confirmation key
 # ------------------------------------------------------
-def generate_confirmation_key(identity_secret: str | bytes, timestamp: int, tag: str) -> str:
+def generate_confirmation_key(
+    identity_secret: str | bytes, timestamp: int, tag: str
+) -> str:
     identity_secret = bufferize_secret(identity_secret)
 
     # Соответствует node.js: 8 байт времени + tag
@@ -75,14 +77,13 @@ def generate_confirmation_key(identity_secret: str | bytes, timestamp: int, tag:
 
 
 # ------------------------------------------------------
-# 5. Получение time offset от Steam 
+# 5. Получение time offset от Steam
 # ------------------------------------------------------
 def get_time_offset() -> tuple[int, int]:
     start = time.time()
 
     r = requests.post(
-        "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/",
-        data=b""
+        "https://api.steampowered.com/ITwoFactorService/QueryTime/v1/", data=b""
     )
 
     if r.status_code != 200:
@@ -100,7 +101,7 @@ def get_time_offset() -> tuple[int, int]:
 
 
 # ------------------------------------------------------
-# 6. Device ID 
+# 6. Device ID
 # ------------------------------------------------------
 def get_device_id(steamid: str) -> str:
     salt = os.environ.get("STEAM_TOTP_SALT", "")

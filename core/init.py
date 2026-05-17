@@ -9,7 +9,7 @@ import requests
 from dotenv import load_dotenv
 
 from core.db import PostgreSQLDB
-from core.steam.cookies import ensure_cookies
+from api.cookies import ensure_cookies
 
 log = logging.getLogger("init")
 

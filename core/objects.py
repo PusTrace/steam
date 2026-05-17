@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, List, Tuple
+from typing import Optional, List
 from pydantic import BaseModel
 import yaml
 
@@ -26,7 +26,7 @@ class PlaceOrdersConfig(BaseModel):
 
 
 class ParserConfig(BaseModel):
-    steam_appid: int
+    appid: int
     orders_cache_days: int
     prices_cache_days: int
     analysis_cache_days: int
@@ -34,6 +34,7 @@ class ParserConfig(BaseModel):
     retry_delay_range: List[int]
     currency: int
     country: str
+    steam_id: int
 
 
 class SellSkins(BaseModel):
@@ -52,44 +53,9 @@ class Config(BaseModel):
     analysis: AnalysisConfig
 
 
-# =========== USER ==============
-@dataclass
-class UserHistory:
-    name: str
-    price: float
-    asset_id: int
-    acted_on: str
-    listed_on: str
-    gain_loss: bool
-
-
-@dataclass
-class UserBuyOrders:
-    id: int
-    name: str
-    price: float
-    qty: int
-
-
-@dataclass
-class UserSellOrders:
-    id: int
-    name: str
-    price: float
-    date: str
-
-
-class UserInventory(BaseModel):
-    name: str
-    class_id: int
-    instance_id: int
-    asset_id: int
-    marketable_time: Optional[str]
-    float_value: Optional[float]
-    int_value: Optional[int]
-
-
 # ============== ITEM ============
+
+
 class Skin(BaseModel):
     id: int
     name: str
@@ -97,26 +63,6 @@ class Skin(BaseModel):
     orders_timestamp: Optional[datetime] = None
     history_timestamp: Optional[datetime] = None
     buy_price: Optional[float] = None
-
-
-class ItemPriceHistory(BaseModel):
-    date: datetime
-    price: float
-    volume: int
-
-
-@dataclass
-class ItemOrder:
-    price: float
-    qty: int
-
-
-@dataclass
-class ItemMarketData:
-    history: list[ItemPriceHistory]
-    buy_orders: list[ItemOrder]
-    sell_orders: list[ItemOrder]
-    skin: Skin
 
 
 @dataclass
@@ -191,10 +137,6 @@ class ItemDecision:
     price: float
     amount: int
     score: float
-
-
-def parse_orders(raw: list[list]) -> list[ItemOrder]:
-    return [ItemOrder(price=p, qty=q) for p, q, _ in raw]
 
 
 def load_config() -> Config:
