@@ -12,7 +12,7 @@
 # - orchestration
 
 import logging
-import core.objects as obj
+import core.models as obj
 import analysis.cleaners as cleaners
 import analysis.features as features
 from datetime import datetime, timedelta, timezone

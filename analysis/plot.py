@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import core.objects as obj
+import core.models as obj
 from typing import List, Tuple
 
 

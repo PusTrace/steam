@@ -72,7 +72,7 @@ class SteamMarketClient:
     # ------------------------------------------------------------------ #
 
     def fetch_inventory(
-        self, steam_id: str, appid: str = "730", context: str = "2"
+        self, steam_id: int, appid: str = "730", context: str = "2"
     ) -> dict:
         url = f"https://steamcommunity.com/inventory/{steam_id}/{appid}/{context}"
 

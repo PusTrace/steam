@@ -5,24 +5,35 @@ Knows about cache expiry, calls client for raw data, calls parser for objects.
 
 from .client import SteamMarketClient
 from . import parser
-from .models import (
+from core.models import (
     ItemMarketData,
     UserInventory,
     UserBuyOrder,
     UserSellOrder,
     UserHistory,
 )
+import core.models as obj
 
 
 class MarketService:
-    def __init__(self, client: SteamMarketClient):
+    """
+
+    Responsibilities:
+        get_market_data: history, buy orders, sell orders
+        get_inventory: Inventory
+        get_my_state: total buy orders price, wallet balance, buy orders, sell orders
+        get_my_history: user history
+    """
+
+    def __init__(self, client: SteamMarketClient, secrets: obj.Secrets):
         self.client = client
+        self.secrets = secrets
 
     # ------------------------------------------------------------------ #
     #  Market data                                                         #
     # ------------------------------------------------------------------ #
 
-    def get_market_data(self, skin) -> ItemMarketData:
+    def get_market_data(self, skin: obj.Skin) -> ItemMarketData:
         buy_orders, sell_orders = self._get_orders(skin)
         history = self._get_price_history(skin)
         return ItemMarketData(
@@ -46,8 +57,8 @@ class MarketService:
     #  Inventory                                                           #
     # ------------------------------------------------------------------ #
 
-    def get_inventory(self, steam_id: str) -> list[UserInventory]:
-        raw = self.client.fetch_inventory(steam_id)
+    def get_inventory(self) -> list[UserInventory]:
+        raw = self.client.fetch_inventory(self.secrets.Session.SteamID)
         return parser.parse_inventory(raw)
 
     # ------------------------------------------------------------------ #

@@ -4,93 +4,50 @@
 Запускается по расписанию через cron
 """
 
-from os import name
+import os
 import sys
 import logging
 from pathlib import Path
-import time
-import random
 
 # добавляем корень проекта в PYTHONPATH
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.init import init_environment
+
+from core import db
 from core.logging_config import setup_logging, install_global_exception_handler
-from core.Parsers import SteamMarketParser
-from modules.SkinChecker import SkinChecker
-from core.steam.sell import sell_skin
-from core.steam.confirmation import accept_all_confirmations
-from core.steam.cookies import get_identity_secret
 from analysis.strategies import PTModel
-from modules.soft_parser import SoftParser
-import core.objects as obj
+import core.models as obj
+from SteamAPI import SteamAPI
+from core.db import PostgreSQLDB
 
 log = logging.getLogger("sell_skins")
-
-
-class SkinFilter:
-    def __init__(self, cfg: obj.Config.sell_skins) -> None:
-        self.cfg = cfg
-
-    @staticmethod
-    def bef_should_skip(float_value):
-        if float_value is None:
-            return True, "float is None"
-        return False, ""
-
-    def aft_should_skip(self, skin: obj.UserInventory, item_name_id: int | None):
-        if skin.float_value < self.cfg.min_float_value:
-            return True, f"float too low ({skin.float_value:.4f})"
-        if skin.marketable_time is not None:
-            return True, f"trade locked until {skin.marketable_time}"
-        if item_name_id is None:
-            return True, "item_name_id is None"
-        return False, ""
-
-
-# === Расчёт цен ===
-class PriceCalculator:
-    def __init__(self, cfg: obj.SellSkins):
-        self.cfg = cfg
-
-    def calculate_margin_price(avg_market_price, buy_price):
-        if buy_price is None:
-            return avg_market_price, None
-
-        expected_profit = (avg_market_price * Config.STEAM_FEE) - buy_price
-        margin_percent = (expected_profit / buy_price) * 100
-
-        if margin_percent < Config.MIN_MARGIN_PERCENT:
-            sell_price = buy_price / Config.STEAM_FEE
-        else:
-            sell_price = avg_market_price
-
-        return sell_price, margin_percent
 
 
 # === Основная логика ===
 class SkinSeller:
     """Автоматическая продажа скинов из инвентаря"""
 
-    def __init__(self, session, cookies, db):
-        self.session = session
-        self.cookies = cookies
-        self.db = db
-        self.cfg = obj.load_config()
+    def __init__(self):
+        secrets = obj.load_secrets()
+        cfg = obj.load_config()
 
-        self.parser = SteamMarketParser(session, cookies, db)
+        self.db = PostgreSQLDB(host=secrets.db_host, password=secrets.db_password)
+        self.api = SteamAPI(secrets=secrets, config=cfg)
+        self.model = PTModel("EVA")
+
+        self.secrets = secrets
+        self.cfg = cfg.sell_skins
+        self.cfg = cfg.sell_skins
 
         self.stats = {"total": 0, "skipped": 0, "new_skins": 0, "sold": 0, "failed": 0}
-
-        self.model = PTModel("EVA", db)
         self.order_events = []
         self.new_items = []
 
     def run(self) -> int:
         """Основная логика модуля"""
-        log.info("Fetching inventory")
+        log.debug("Fetching inventory")
 
-        inventory = self.parser.get_inventory()
+        inventory = self.api.market.get_inventory()
         self.inventory = inventory
 
         if inventory is None:
@@ -101,7 +58,7 @@ class SkinSeller:
         log.info(f"Found {len(inventory)} items in inventory")
 
         if len(inventory) == 0:
-            log.info("Inventory is empty, nothing to sell")
+            log.error("Inventory is empty, nothing to sell")
             return 0
 
         # получаем данные о скинах из БД
@@ -109,16 +66,29 @@ class SkinSeller:
 
         # обрабатываем каждый скин
         for skin in inventory:
+            db_skin = None
+            for db_skin in skins_db:  # TODO: db skin must be obj.Skin
+                if db_skin["name"] == skin.name:
+                    break
+                else:
+                    continue
+            if db_skin is None:
+                log.info(f"New skin detected, adding to list: {skin.name}")
+                self.new_items.append(skin.name)
+                self.stats["new_skins"] += 1
+                continue
             try:
-                self._process_single_skin(skin, skins_db)
+                self._process_single_skin(skin, db_skin)
+                exit(1)
             except Exception as e:
                 log.error(f"Failed to process skin: {e}", exc_info=True)
                 self.stats["failed"] += 1
+                exit(1)
 
         # принимаем все подтверждения
         log.info("Accepting all confirmations")
         try:
-            accept_all_confirmations(self.session, self.cookies, get_identity_secret())
+            self.api.conf.accept_all()
         except Exception as e:
             log.error(f"Failed to accept confirmations: {e}", exc_info=True)
 
@@ -127,124 +97,107 @@ class SkinSeller:
         # exit code: 0 если всё ок, 1 если были фейлы
         return 1 if self.stats["failed"] > 0 else 0
 
-    def _process_single_skin(self, skin: obj.UserInventory, skins_db):
+    def _process_single_skin(self, skin, db_skin):
         """Обработка одного скина"""
-        skin_name = skin.name
-        asset_id = skin.asset_id
-        marketable_time = skin.marketable_time
-        float_value = skin.float_value
-        buy_price = None
-
         idx = self.stats["skipped"] + self.stats["sold"] + self.stats["failed"] + 1
-        log.info(f"[{idx}/{self.stats['total']}] Processing: {skin_name}")
+        log.info(f"[{idx}/{self.stats['total']}] Processing: {skin.name}")
         # проверяем можно ли продавать
-        should_skip, reason = SkinFilter.bef_should_skip(float_value)
-
-        if should_skip:
-            log.info(f"Skipped {skin_name}: {reason}")
+        if skin.float_value is None:
+            log.debug(f"Skipped {skin.name}: float is none")
             self.stats["skipped"] += 1
             return
 
         # проверяем есть ли скин в БД
-        skin_data = skins_db.get(skin_name)
+        db_skin = obj.Skin.model_validate(db_skin)
 
-        if skin_data is None:
-            log.info(f"New skin detected, adding to DB: {skin_name}")
-            self.db.add_skin(skin_name)
-            self.db.commit()
-            self.new_items.append(skin_name)
-            self.stats["new_skins"] += 1
-            self.stats["skipped"] += 1
-            return
-
-        item_name_id = skin_data[4]
-
-        buy_price = skin_data[7]
+        item_name_id = db_skin.item_name_id
+        buy_price = db_skin.buy_price
 
         # проверяем можно ли продавать
-        should_skip, reason = SkinFilter.aft_should_skip(
-            float_value, marketable_time, item_name_id
-        )
-
-        if should_skip:
-            log.info(f"Skipped {skin_name}: {reason}")
+        if skin.float_value < self.cfg.min_float_value:
+            log.info(f"float too low ({skin.float_value:.4f})")
+            self.stats["skipped"] += 1
+            return
+        if skin.marketable_time is not None:
+            log.info(f"trade locked until {skin.marketable_time}")
+            self.stats["skipped"] += 1
+            return
+        if item_name_id is None:
+            log.info("item_name_id is None")
             self.stats["skipped"] += 1
             return
 
         # получаем рыночную цену
         try:
-            self.parser.load_skin(skin_data)
-            history, buy_orders, sell_orders = self.parser.get_data()
+            market_data = self.api.market.get_market_data(skin=db_skin)
 
-            processing_data, _, analysis_id = self.model.processing(
-                history=history,
-                buy_orders=buy_orders,
-                sell_orders=sell_orders,
-                skin=skin_data,
+            resp = self.model.process(market_data=market_data)
+            if resp is None:
+                log.error(f"cant processing item: {skin.name}")
+                self.stats["failed"] += 1
+                return
+            processed, _ = resp
+
+            self.order_events.append(["BUY_FILLED", skin.name, buy_price, 1, processed])
+
+            avg_market_price = (
+                max(processed.avg_week, processed.avg_5_sell_orders) * 1.01
             )
 
-            is_legacy = buy_price is None
-
-            if not is_legacy:
-                self.order_events.append(
-                    ["BUY_FILLED", skin_name, buy_price, 1, analysis_id]
-                )
-
-            avg_week = processing_data[3]
-            avg_sell_price = processing_data[8]
-
-            avg_market_price = max(avg_week, avg_sell_price) * 1.01
-
-            log.info(
+            log.debug(
                 "avg_week=%.2f avg_sell=%.2f target=%.2f",
-                avg_week,
-                avg_sell_price,
+                processed.avg_week,
+                processed.avg_5_sell_orders,
                 avg_market_price,
             )
+            exit(0)
 
         except Exception as e:
-            log.error(f"Market data error for {skin_name}: {e}", exc_info=True)
+            log.error(f"Market data error for {skin.name}: {e}", exc_info=True)
             self.stats["failed"] += 1
+            exit(0)
             return
 
         # рассчитываем цену продажи
-        sell_price, margin = PriceCalculator.calculate_margin_price(
-            avg_market_price, buy_price
-        )
-
-        if margin is not None:
-            log.info(
-                f"Pricing {skin_name} | buy={buy_price} avg={avg_market_price} "
-                f"margin={margin:+}% sell={sell_price}"
-            )
-        else:
-            log.info(f"Pricing {skin_name} | sell={sell_price}")
+        sell_price, margin = self.calculate_margin_price(avg_market_price, buy_price)
+        log.debug(f"buy={buy_price} margin={margin:+}% sell={sell_price}")
 
         # выставляем на продажу
-        success = sell_skin(sell_price, asset_id, self.cookies)
+        success = self.api.trade.sell_skin(sell_price, skin.asset_id)
 
         if success:
-            if not is_legacy:
-                self.order_events.append(
-                    ["SELL_PLACED", skin_name, round(sell_price * 0.87), 1, analysis_id]
-                )
-            else:
-                log.warning(f"legacy_sell: {skin_name}")
-            log.info(f"Listed successfully: {skin_name}")
+            self.order_events.append(
+                ["SELL_PLACED", skin.name, round(sell_price * 0.87), 1, processed]
+            )
+            log.info(f"Listed successfully: {skin.name}")
             self.stats["sold"] += 1
         else:
-            log.error(f"Failed to list: {skin_name}")
+            log.error(f"Failed to list: {skin.name}")
             self.stats["failed"] += 1
+        self._print_summary()
 
     def _print_summary(self):
-        log.info("=" * 50)
         log.info("EXECUTION SUMMARY")
         log.info(f"Total items:    {self.stats['total']}")
-        log.info(f"Listed:         {self.stats['sold']}")
-        log.info(f"Skipped:        {self.stats['skipped']}")
-        log.info(f"New skins:      {self.stats['new_skins']}")
-        log.info(f"Failed:         {self.stats['failed']}")
-        log.info("=" * 50)
+        if self.stats["sold"]:
+            log.info(f"Listed:         {self.stats['sold']}")
+        if self.stats["skipped"]:
+            log.info(f"Skipped:        {self.stats['skipped']}")
+        if self.stats["new_skins"]:
+            log.info(f"New skins:      {self.stats['new_skins']}")
+        if self.stats["failed"]:
+            log.info(f"Failed:         {self.stats['failed']}")
+
+    def calculate_margin_price(self, avg_market_price, buy_price):
+        expected_profit = (avg_market_price * self.cfg.steam_fee) - buy_price
+        margin_percent = (expected_profit / buy_price) * 100
+
+        if margin_percent < self.cfg.min_margin_percent:
+            sell_price = buy_price / self.cfg.steam_fee
+        else:
+            sell_price = avg_market_price
+
+        return sell_price, margin_percent
 
 
 def main():
@@ -257,45 +210,45 @@ def main():
     # 2. Настраиваем логирование
     MODULE_NAME = "sell_skins"
     setup_logging(
-        module_name=MODULE_NAME, log_file=f"logs/{MODULE_NAME}.log", level=logging.DEBUG
+        module_name=MODULE_NAME,
+        log_file=f"logs/{MODULE_NAME}.log",
+        level=logging.DEBUG,
+        with_telergam=False,
     )
 
     # 3. Устанавливаем exception handler
     install_global_exception_handler(MODULE_NAME)
 
-    log.info("=" * 60)
     log.info(f"Starting {MODULE_NAME}")
-    log.info("=" * 60)
 
     try:
         # инициализируем окружение
-        session, cookies, db = init_environment()
 
         # создаём и запускаем модуль
-        seller = SkinSeller(session, cookies, db)
+        seller = SkinSeller()
         exit_code = seller.run()
-        inventory = seller.inventory
+        # inventory = seller.inventory
 
         log.info(f"SkinSeller finished with exit code {exit_code}")
 
-        sleep_time = random.uniform(3, 6)
-        log.info(f"sleep bef start SkinChecker: {round(sleep_time)}")
-        time.sleep(sleep_time)
+        # sleep_time = random.uniform(3, 6)
+        # log.info(f"sleep bef start SkinChecker: {round(sleep_time)}")
+        # time.sleep(sleep_time)
 
-        order_events = seller.order_events
-        if len(order_events) > 0:
-            checker = SkinChecker(session, cookies, db, order_events, inventory)
-            checker.run()
+        # order_events = seller.order_events
+        # if len(order_events) > 0:
+        #    checker = SkinChecker(session, cookies, db, order_events, inventory)
+        #    checker.run()
 
-        parser = SoftParser(session=session, cookies=cookies, db=db)
+        # parser = SoftParser(session=session, cookies=cookies, db=db)
 
-        sleep_time = random.uniform(3, 6)
-        log.info(f"sleep bef start SoftParser: {round(sleep_time)}")
-        log.info("Running item_nameid update")
-        exit_code = parser.run_update_item_nameids()
+        # sleep_time = random.uniform(3, 6)
+        # log.info(f"sleep bef start SoftParser: {round(sleep_time)}")
+        # log.info("Running item_nameid update")
+        # exit_code = parser.run_update_item_nameids()
 
-        db.close()
-        log.info(f"SkinChecker finished with exit code {exit_code}")
+        # db.close()
+        # log.info(f"SkinChecker finished with exit code {exit_code}")
     except KeyboardInterrupt:
         log.warning("Interrupted by user")
         sys.exit(130)

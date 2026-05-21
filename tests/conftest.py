@@ -1,17 +1,20 @@
 import sys
 from pathlib import Path
+import os
 
-import pytest
 from dotenv import load_dotenv
+import pytest
+
+from core.db import PostgreSQLDB
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.init import init_environment
 from core import objects as obj
-from api.api import SteamAPI
+from SteamAPI import SteamAPI
+from SteamAPI import SteamAPI
 
 # ─────────────────────────────────────────────────────────────────── #
-#  Низкоуровневые фикстуры                                            #
+#   фикстуры                                            #
 # ─────────────────────────────────────────────────────────────────── #
 
 
@@ -21,27 +24,21 @@ def config() -> obj.Config:
 
 
 @pytest.fixture(scope="session")
-def environment():
+def mafile() -> obj.Mafile:
+    return obj.load_mafile()
+
+
+@pytest.fixture(scope="session")
+def api(mafile, config):
+    api = SteamAPI(mafile=mafile, config=config)
+    return api
+
+
+@pytest.fixture(scope="session")
+def db():
     load_dotenv()
-    session, _, db = init_environment()
-    return session, db
-
-
-@pytest.fixture(scope="session")
-def db(environment):
-    _, db = environment
+    db = PostgreSQLDB(host=os.getenv("DB_HOST"), password=os.getenv("DEFAULT_PASSWORD"))
     return db
-
-
-# ─────────────────────────────────────────────────────────────────── #
-#  API-фикстуры                                                       #
-# ─────────────────────────────────────────────────────────────────── #
-
-
-@pytest.fixture(scope="session")
-def api(environment, config) -> SteamAPI:
-    session, _ = environment
-    return SteamAPI(session, config)
 
 
 @pytest.fixture(scope="session")

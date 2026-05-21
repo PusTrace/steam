@@ -1,19 +1,21 @@
 place_orders:
-  user_want:
-    ['Huntsman Knife', 'Neo-Noir']
+  user_want: ["Huntsman Knife", "Neo-Noir"]
   deapth_of_thirst: 1
   dot_multiplier: 5
 
 parser:
   appid: 730
   orders_cache_days: 1
-  prices_cache_days: 3  
+  prices_cache_days: 3
   analysis_cache_days: 3
   max_retries: 5
   retry_delay_range: [360, 720]
   currency: 37
   country: "KZ"
   steam_id: 76561198857946351
+
+steam:
+  cookie_max_age: 31536000
 
 sell_skins:
   min_float_value: 0.01

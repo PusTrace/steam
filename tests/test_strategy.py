@@ -42,3 +42,20 @@ def test_strategy_decide():
             assert price > 0
         if amount is not None:
             assert amount > 0
+
+
+def test_strategy_randomized():
+
+    pt_model = PTModel(
+        model_type="EVA",
+        plot=False,
+    )
+
+    for _ in range(100):
+        market_data = generate_market_data()
+
+        processed, _ = pt_model.process(market_data=market_data)
+
+        _ = pt_model.decide(processed=processed, market_data=market_data)
+
+        assert processed is not None

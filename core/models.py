@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from pydantic import BaseModel
 import yaml
+import json
 
 
 # =============== CONFIG ===========
@@ -139,8 +140,109 @@ class ItemDecision:
     score: float
 
 
+class secretsSession(BaseModel):
+    SteamID: int
+    AccessToken: str
+    RefreshToken: str
+    SessionID: Optional[str] = None
+
+
+class Secrets(BaseModel):
+    shared_secret: str
+    serial_number: int
+    revocation_code: str
+    uri: str
+    server_time: int
+    account_name: str
+    password: str
+    token_gid: str
+    identity_secret: str
+    secret_1: str
+    status: int
+    device_id: str
+    fully_enrolled: bool
+    Session: secretsSession
+    db_host: str
+    db_password: str
+    tg_bot_token: str
+    tg_chat_ids: Tuple[str]
+
+
+def load_secrets() -> Secrets:
+    try:
+        with open("config/secrets.json", "r", encoding="utf-8") as f:
+            raw = json.load(f)
+
+        return Secrets.model_validate(raw)
+
+    except Exception as e:
+        raise RuntimeError(f"Failed to load mafile: {e}") from e
+
+
 def load_config() -> Config:
     with open("config/config.yaml", "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
-
     return Config.model_validate(raw)
+
+
+class ItemPriceHistory(BaseModel):
+    date: datetime
+    price: float
+    volume: int
+
+
+@dataclass
+class ItemOrder:
+    price: float
+    qty: int
+
+
+@dataclass
+class ItemMarketData:
+    history: list[ItemPriceHistory]
+    buy_orders: list[ItemOrder]
+    sell_orders: list[ItemOrder]
+    skin: Skin
+
+
+@dataclass
+class UserHistory:
+    name: str
+    price: float
+    asset_id: int
+    acted_on: str
+    listed_on: str
+    gain_loss: bool
+
+
+@dataclass
+class UserBuyOrder:
+    id: int
+    name: str
+    price: float
+    qty: int
+
+
+@dataclass
+class UserSellOrder:
+    id: int
+    name: str
+    price: float
+    date: str
+
+
+class UserInventory(BaseModel):
+    name: str
+    class_id: int
+    instance_id: int
+    asset_id: int
+    marketable_time: Optional[str]
+    float_value: Optional[float]
+    int_value: Optional[int]
+
+
+class SteamUrl:
+    API_URL = "https://api.steampowered.com"
+    COMMUNITY_URL = "https://steamcommunity.com"
+    STORE_URL = "https://store.steampowered.com"
+    LOGIN_URL = "https://login.steampowered.com"

@@ -1,10 +1,16 @@
-import requests, time
+import requests
+import time
 from urllib.parse import unquote
-
-from core.steam.crypt import generate_confirmation_key, get_device_id, get_time_offset, steam_time
+from SteamAPI.auth.crypt import (
+    get_device_id,
+    steam_time,
+    generate_confirmation_key,
+    get_time_offset,
+)
 
 STEAM_COMMUNITY_URL = "https://steamcommunity.com"
 _used_conf_times = []
+
 
 def steam_request(
     session,
@@ -13,8 +19,8 @@ def steam_request(
     key: str,
     timestamp: int,
     tag: str,
-    params: dict = None,
-    json_mode: bool = False
+    params: dict = {},
+    json_mode: bool = False,
 ):
     """
     session – requests.Session()
@@ -28,16 +34,18 @@ def steam_request(
     """
 
     if not steamid:
-        raise Exception("Must be logged in before trying to do anything with confirmations")
+        raise Exception(
+            "Must be logged in before trying to do anything with confirmations"
+        )
 
     # === 1. БАЗОВЫЕ ПАРАМЕТРЫ ===
     params = params or {}
-    params['p'] = get_device_id(steamid)
-    params['a'] = steamid
-    params['k'] = key
-    params['t'] = timestamp
-    params['m'] = 'react'
-    params['tag'] = tag
+    params["p"] = get_device_id(steamid)
+    params["a"] = steamid
+    params["k"] = key
+    params["t"] = timestamp
+    params["m"] = "react"
+    params["tag"] = tag
 
     # === 2. Сборка URL ===
     req_url = f"https://steamcommunity.com/mobileconf/{url}"
@@ -48,20 +56,10 @@ def steam_request(
 
     # === 4. Выполнение запроса ===
     try:
-
         if method == "GET":
-            resp = session.get(
-                req_url,
-                params=params,
-                timeout=(5, 10)
-            )
+            resp = session.get(req_url, params=params, timeout=(5, 10))
         else:
-            resp = session.post(
-                req_url,
-                data=params,
-                timeout=(5, 10)
-            )
-
+            resp = session.post(req_url, data=params, timeout=(5, 10))
 
     except requests.Timeout:
         print("[STEAM_REQ] TIMEOUT")
@@ -77,16 +75,15 @@ def steam_request(
             data = resp.json()
             return data
         except Exception as e:
-            print(f"[STEAM_REQ] invalid json: {resp.text[:200]}")
+            print(f"error: {e} [STEAM_REQ] invalid json: {resp.text[:200]}")
             return {"success": False, "error": "invalid_json"}
-
 
     return resp
 
 
-def get_confirmations(session, cookies, identity_secret, offset):
+def get_confirmations(session, identity_secret, offset):
     """Получаем список всех подтверждений (как Node.js getConfirmations)"""
-    steam_login_secure = cookies.get("steamLoginSecure")
+    steam_login_secure = session.cookies.get("steamLoginSecure")
     steam_login_secure = unquote(steam_login_secure)
     steamid = steam_login_secure.split("|")[0] if steam_login_secure else None
     if not steamid:
@@ -95,25 +92,38 @@ def get_confirmations(session, cookies, identity_secret, offset):
     timestamp = steam_time(offset)
     key = generate_confirmation_key(identity_secret, timestamp, "conf")
 
-    body = steam_request(session, 'getlist', steamid, key, timestamp, 'conf', json_mode=True)
+    body = steam_request(
+        session, "getlist", steamid, key, timestamp, "conf", json_mode=True
+    )
 
-    if not body.get('success', False):
-        raise Exception(body.get('message') or body.get('detail') or "Не удалось получить список подтверждений")
+    if not body.get("success", False):
+        raise Exception(
+            body.get("message")
+            or body.get("detail")
+            or "Не удалось получить список подтверждений"
+        )
 
     confirmations = []
-    for conf in body.get('conf', []):
-        confirmations.append({
-            'id': conf.get('id'),
-            'type': conf.get('type'),
-            'creator': conf.get('creator_id'),
-            'key': conf.get('nonce'),
-            'title': f"{conf.get('type_name', 'Confirm')} - {conf.get('headline', '')}",
-            'sending': (conf.get('summary') or [])[0] if conf.get('summary') else '',
-            'receiving': (conf.get('summary') or [])[1] if conf.get('summary') and conf.get('type') == 2 else '',
-            'time': conf.get('creation_time')
-        })
+    for conf in body.get("conf", []):
+        confirmations.append(
+            {
+                "id": conf.get("id"),
+                "type": conf.get("type"),
+                "creator": conf.get("creator_id"),
+                "key": conf.get("nonce"),
+                "title": f"{conf.get('type_name', 'Confirm')} - {conf.get('headline', '')}",
+                "sending": (conf.get("summary") or [])[0]
+                if conf.get("summary")
+                else "",
+                "receiving": (conf.get("summary") or [])[1]
+                if conf.get("summary") and conf.get("type") == 2
+                else "",
+                "time": conf.get("creation_time"),
+            }
+        )
 
     return confirmations
+
 
 def steam_confirm(session, cookies, steamid, identity_secret, conf_id, conf_key):
     """Отправляет подтверждение по exact API Steam Mobile"""
@@ -129,31 +139,28 @@ def steam_confirm(session, cookies, steamid, identity_secret, conf_id, conf_key)
         "k": generate_confirmation_key(identity_secret, timestamp, "allow"),
         "t": timestamp,
         "m": "react",
-        "tag": "allow"
+        "tag": "allow",
     }
 
     url = "https://steamcommunity.com/mobileconf/ajaxop"
 
     resp = session.get(url, params=params, cookies=cookies)
 
-    try:
-        return resp.json()
-    except:
-        print("RAW:", resp.text)
-        return None
+    return resp.json()
 
-def accept_all_confirmations(session, cookies, identity_secret):
+
+def accept_all_confirmations(session, identity_secret):
     """
     Принимает все подтверждения из списка
     """
 
     # Получаем список подтверждений
-    confirmations = get_confirmations(session, cookies, identity_secret, 0)
+    confirmations = get_confirmations(session, identity_secret, 0)
 
     if not confirmations:
         return {"success": True, "accepted": [], "message": "Нет подтверждений"}
 
-    steamid = unquote(cookies.get("steamLoginSecure")).split("|")[0]
+    steamid = unquote(session.cookies.get("steamLoginSecure")).split("|")[0]
 
     results = []
 
@@ -163,11 +170,7 @@ def accept_all_confirmations(session, cookies, identity_secret):
         time.sleep(1)
         timestamp = int(time.time())
         key = generate_confirmation_key(identity_secret, timestamp, "allow")
-        params = {
-            "op": "allow",
-            "cid": conf_id,
-            "ck": conf_key
-        }
+        params = {"op": "allow", "cid": conf_id, "ck": conf_key}
         url = "ajaxop"  # если одиночное подтверждение
 
         resp = steam_request(
@@ -178,28 +181,25 @@ def accept_all_confirmations(session, cookies, identity_secret):
             timestamp=timestamp,
             tag="allow",
             params=params,
-            json_mode=True
+            json_mode=True,
         )
 
-        results.append({
-            "id": conf_id,
-            "response": resp
-        })
+        results.append({"id": conf_id, "response": resp})
 
     return results
 
 
-def accept_confirmation_for_order(session, cookies, identity_secret, object_id):
+def accept_confirmation_for_order(session, identity_secret, object_id):
     global _used_conf_times
 
     # steamLoginSecure → steamID64
-    steamid = unquote(cookies["steamLoginSecure"]).split("|")[0]
+    steamid = unquote(session.cookies["steamLoginSecure"]).split("|")[0]
 
     # 1. Получаем server time offset
     offset, latency = get_time_offset()
 
     # 2. Получаем список подтверждений с tag=list
-    confs = get_confirmations(session, cookies, identity_secret, offset)
+    confs = get_confirmations(session, identity_secret, offset)
 
     target = None
     for c in confs:
@@ -226,11 +226,7 @@ def accept_confirmation_for_order(session, cookies, identity_secret, object_id):
     # 4. Генерация KEY для accept
     key = generate_confirmation_key(identity_secret, timestamp, "accept")
 
-    params = {
-        "op": "accept",
-        "cid": target["id"],
-        "ck": target["key"]
-    }
+    params = {"op": "accept", "cid": target["id"], "ck": target["key"]}
 
     result = steam_request(
         session=session,
@@ -240,7 +236,7 @@ def accept_confirmation_for_order(session, cookies, identity_secret, object_id):
         timestamp=timestamp,
         tag="accept",
         params=params,
-        json_mode=True
+        json_mode=True,
     )
 
     # Node ожидает {success: true}
@@ -248,3 +244,4 @@ def accept_confirmation_for_order(session, cookies, identity_secret, object_id):
         return {"success": True}
 
     return {"success": False, "response": result}
+

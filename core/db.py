@@ -3,7 +3,7 @@ from psycopg2.extras import Json, DictCursor
 from datetime import datetime, timezone, timedelta
 import yaml
 import os
-import core.objects as obj
+import core.models as obj
 
 
 def normalize_date(raw_date):
@@ -303,7 +303,7 @@ class PostgreSQLDB:
             rows = cursor.fetchall()
 
             # Возвращаем dict по имени с buy_price как отдельным полем
-            return {row["name"]: row for row in rows}
+            return rows
 
     def log_sell_orders(self, data):
         self.cursor.execute(

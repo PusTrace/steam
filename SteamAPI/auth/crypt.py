@@ -1,5 +1,8 @@
-import base64, hashlib, hmac, os, requests
-from datetime import time
+import base64
+import hashlib
+import hmac
+import os
+import requests
 import time
 
 
@@ -24,8 +27,6 @@ def bufferize_secret(secret: str | bytes) -> bytes:
         else:
             # считаем что base64
             return base64.b64decode(secret)
-
-    raise ValueError("Invalid secret format")
 
 
 # ------------------------------------------------------
@@ -111,8 +112,7 @@ def get_device_id(steamid: str) -> str:
 
     # формат UUID: 8-4-4-4-12
     formatted = (
-        f"{digest[0:8]}-{digest[8:12]}-{digest[12:16]}-"
-        f"{digest[16:20]}-{digest[20:32]}"
+        f"{digest[0:8]}-{digest[8:12]}-{digest[12:16]}-{digest[16:20]}-{digest[20:32]}"
     )
 
     return f"android:{formatted}"

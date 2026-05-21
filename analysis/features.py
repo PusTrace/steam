@@ -22,7 +22,7 @@
 import logging
 from datetime import datetime, timedelta, timezone
 import numpy as np
-import core.objects as obj
+import core.models as obj
 from typing import List
 import analysis.cleaners as cleaners
 

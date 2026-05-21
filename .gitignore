@@ -5,5 +5,7 @@
 **/venv/
 logs/*
 config/cookies.json
-config/sda.json
 tests/outputs/*
+config/secrets.json
+.pytest_cache/
+.coverage

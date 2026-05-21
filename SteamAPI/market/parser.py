@@ -3,16 +3,14 @@ Pure parsing functions — take raw bytes/dicts, return domain objects.
 No network, no DB, no side-effects.
 """
 
-from os import name
 import re
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List
 
 from bs4 import BeautifulSoup
 
-from .models import (
+from core.models import (
     ItemPriceHistory,
     ItemOrder,
     UserInventory,

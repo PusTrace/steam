@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-import core.objects as obj
+import core.models as obj
 import analysis.cleaners as cleaners
 import analysis.features as features
 import analysis.filters as filters
@@ -30,7 +30,6 @@ class BaseStrategy:
 
 
 class EVA(BaseStrategy):
-
     def __init__(self, plot):
         config = obj.load_config()
         cfg = config.analysis
@@ -174,7 +173,7 @@ class EVA(BaseStrategy):
 class PTModel:
     """Обёртка для разных стратегий торговли"""
 
-    def __init__(self, model_type: str, plot: bool):
+    def __init__(self, model_type: str, plot: bool = False):
 
         strategies = {"EVA": EVA}
 
